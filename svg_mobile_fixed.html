@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimum-scale=1.0, maximum-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>地圖系統 - 修正版</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html {
+            touch-action: manipulation;
+            -ms-touch-action: manipulation;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            touch-action: none;
+            -webkit-text-size-adjust: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        #app {
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            touch-action: none;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        #canvas.grabbing {
+            cursor: grabbing;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            border: none;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            font-size: 24px;
+            cursor: pointer;
+            touch-action: manipulation;
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.95);
+            color: #334155;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .zoom-level {
+            color: #4ade80;
+            font-weight: bold;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #475569;
+            font-size: 18px;
+            z-index: 2000;
+            text-align: center;
+        }
+
+        iframe {
+            border: none;
+            pointer-events: none;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <canvas id="canvas"></canvas>
+        <div class="loading" id="loading">載入中...</div>
+
+        <div class="controls">
+            <button class="btn" id="zoomIn">+</button>
+            <button class="btn" id="zoomOut">−</button>
+            <button class="btn" id="reset">⟲</button>
+            <button class="btn" id="reload">🔄</button>
+        </div>
+
+        <div class="info">
+            縮放: <span class="zoom-level" id="zoomLevel">100%</span><br>
+            <span id="layerInfo">基礎圖層</span>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數
+        let canvas, ctx;
+        let svgImageBasic = null;  // 基礎圖層 (g2 + svg_655 + svg_30)
+        let svgImageFull = null;   // 完整圖層 (全部)
+        let scale = 0.33; // 初始縮放設為33%
+        let translateX = 0;
+        let translateY = 0;
+        let isDragging = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // 觸控追蹤
+        let touches = [];
+        let lastDistance = 0;
+
+        // 載入並修改SVG
+        async function loadSVG() {
+            try {
+                // 載入SVG文本（添加時間戳強制重新載入）
+                const timestamp = new Date().getTime();
+                const response = await fetch(`svg (1223).svg?t=${timestamp}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const svgText = await response.text();
+
+                console.log('SVG載入成功，檔案大小:', svgText.length);
+                document.getElementById('loading').textContent = '處理SVG中...';
+
+                // 檢查g1元素是否存在
+                const g1Match = svgText.match(/<g[^>]*id="g1"[^>]*>/);
+                if (!g1Match) {
+                    console.warn('未找到g1元素，使用原始SVG');
+                    // 如果沒有g1元素，兩個版本都使用原始SVG
+                    await Promise.all([
+                        loadImageFromSvg(svgText, 'basic'),
+                        loadImageFromSvg(svgText, 'full')
+                    ]);
+                } else {
+                    console.log('找到g1元素:', g1Match[0]);
+
+                    // 創建基礎圖層版本 (完全移除g1內容)
+                    const basicSvgText = svgText.replace(
+                        /<g[^>]*id="g1"[^>]*>[\s\S]*?<\/g>/,
+                        '<g id="g1"></g>'
+                    );
+
+                    console.log('Basic SVG 處理完成，大小:', basicSvgText.length);
+                    console.log('Basic SVG g1檢查:', basicSvgText.includes('<g id="g1"></g>'));
+
+                    // 創建完整圖層版本 (暫時使用原始版本，不修改顏色)
+                    let fullSvgText = svgText;
+                    console.log('Full SVG 使用原始版本，大小:', fullSvgText.length);
+
+                    // 載入兩個版本的圖像
+                    await Promise.all([
+                        loadImageFromSvg(basicSvgText, 'basic'),
+                        loadImageFromSvg(fullSvgText, 'full')
+                    ]);
+                }
+
+                document.getElementById('loading').style.display = 'none';
+                updateUI();
+
+                // 強制多次重繪確保更新
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => requestAnimationFrame(draw), i * 100);
+                }
+
+            } catch (error) {
+                console.error('載入SVG失敗:', error);
+                document.getElementById('loading').textContent = '載入失敗: ' + error.message;
+
+                // 如果修改版本失敗，嘗試載入原始版本
+                try {
+                    const response = await fetch('svg (1223).svg');
+                    const svgText = await response.text();
+                    await loadImageFromSvg(svgText, 'fallback');
+                    svgImageBasic = svgImageFull;
+                    document.getElementById('loading').style.display = 'none';
+                    updateUI();
+                    requestAnimationFrame(draw);
+                } catch (fallbackError) {
+                    console.error('後備載入也失敗:', fallbackError);
+                }
+            }
+        }
+
+        // 從SVG文本創建圖像
+        function loadImageFromSvg(svgText, type) {
+            return new Promise((resolve, reject) => {
+                try {
+                    // 檢查SVG內容是否有效
+                    if (!svgText || !svgText.includes('<svg')) {
+                        throw new Error(`無效的SVG內容 (${type})`);
+                    }
+
+                    // 確保SVG有正確的命名空間
+                    let cleanSvgText = svgText;
+                    if (!cleanSvgText.includes('xmlns="http://www.w3.org/2000/svg"')) {
+                        cleanSvgText = cleanSvgText.replace(
+                            /<svg([^>]*)>/,
+                            '<svg$1 xmlns="http://www.w3.org/2000/svg">'
+                        );
+                    }
+
+                    // 添加唯一ID避免緩存
+                    const uniqueId = Date.now() + Math.random();
+                    cleanSvgText = cleanSvgText.replace(
+                        /<svg([^>]*)>/,
+                        `<svg$1 data-reload="${uniqueId}">`
+                    );
+
+                    const blob = new Blob([cleanSvgText], {
+                        type: 'image/svg+xml;charset=utf-8'
+                    });
+                    const url = URL.createObjectURL(blob);
+
+                    console.log(`創建${type}圖像URL:`, url);
+
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+
+                    img.onload = function() {
+                        console.log(`${type}圖像載入成功:`, img.width, 'x', img.height);
+
+                        if (type === 'basic') {
+                            svgImageBasic = img;
+                        } else if (type === 'full') {
+                            svgImageFull = img;
+                        } else if (type === 'fallback') {
+                            svgImageFull = img;
+                        }
+
+                        URL.revokeObjectURL(url);
+
+                        // 圖像載入完成後立即重繪
+                        if (ctx) {
+                            requestAnimationFrame(draw);
+                        }
+
+                        resolve();
+                    };
+
+                    img.onerror = function(e) {
+                        console.error(`${type}圖像載入錯誤:`, e);
+                        URL.revokeObjectURL(url);
+                        reject(new Error(`載入${type}圖像失敗: ${e.message || '未知錯誤'}`));
+                    };
+
+                    // 設置超時
+                    setTimeout(() => {
+                        if (!img.complete) {
+                            URL.revokeObjectURL(url);
+                            reject(new Error(`載入${type}圖像超時`));
+                        }
+                    }, 10000);
+
+                    img.src = url;
+
+                } catch (error) {
+                    console.error(`創建${type}圖像時發生錯誤:`, error);
+                    reject(error);
+                }
+            });
+        }
+
+        // 初始化Canvas
+        function initCanvas() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+
+            // 設定Canvas大小
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                draw();
+            }
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // 註冊事件
+            setupEventHandlers();
+        }
+
+        // 設定事件處理器
+        function setupEventHandlers() {
+            // 完全阻止預設行為
+            const preventDefaults = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            };
+
+            // 阻止所有可能的縮放行為
+            document.addEventListener('gesturestart', preventDefaults, false);
+            document.addEventListener('gesturechange', preventDefaults, false);
+            document.addEventListener('gestureend', preventDefaults, false);
+
+            // 觸控事件
+            canvas.addEventListener('touchstart', handleTouchStart, {passive: false});
+            canvas.addEventListener('touchmove', handleTouchMove, {passive: false});
+            canvas.addEventListener('touchend', handleTouchEnd, {passive: false});
+            canvas.addEventListener('touchcancel', handleTouchEnd, {passive: false});
+
+            // 滑鼠事件（桌面支援）
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('wheel', handleWheel, {passive: false});
+
+            // 按鈕事件
+            document.getElementById('zoomIn').addEventListener('click', () => {
+                scale = Math.min(5, scale * 1.2);
+                updateUI();
+                draw();
+            });
+
+            document.getElementById('zoomOut').addEventListener('click', () => {
+                scale = Math.max(0.2, scale / 1.2);
+                updateUI();
+                draw();
+            });
+
+            document.getElementById('reset').addEventListener('click', () => {
+                scale = 0.33;  // 重置到33%
+                translateX = 0;
+                translateY = 0;
+                updateUI();
+                draw();
+            });
+
+            document.getElementById('reload').addEventListener('click', async () => {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('loading').textContent = '重新載入SVG...';
+
+                try {
+                    // 清除舊的圖像
+                    svgImageBasic = null;
+                    svgImageFull = null;
+
+                    // 清除Canvas
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    // 重新載入SVG
+                    await loadSVG();
+
+                    // 強制重繪
+                    requestAnimationFrame(draw);
+
+                    console.log('SVG重新載入完成');
+                } catch (error) {
+                    console.error('重新載入失敗:', error);
+                    document.getElementById('loading').textContent = '重新載入失敗';
+                    setTimeout(() => {
+                        document.getElementById('loading').style.display = 'none';
+                    }, 2000);
+                }
+            });
+
+            // 阻止雙擊縮放
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function(e) {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) {
+                    e.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
+
+            // 阻止捏合縮放
+            document.addEventListener('touchmove', function(e) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, {passive: false});
+        }
+
+        // 觸控開始
+        function handleTouchStart(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            touches = Array.from(e.touches);
+
+            if (touches.length === 1) {
+                // 單指 - 拖曳
+                isDragging = true;
+                lastX = touches[0].clientX;
+                lastY = touches[0].clientY;
+                canvas.classList.add('grabbing');
+            } else if (touches.length === 2) {
+                // 雙指 - 縮放
+                isDragging = false;
+                const dx = touches[1].clientX - touches[0].clientX;
+                const dy = touches[1].clientY - touches[0].clientY;
+                lastDistance = Math.hypot(dx, dy);
+                console.log('Touch start - 2 fingers, initial distance:', lastDistance);
+            }
+
+            return false;
+        }
+
+        // 觸控移動
+        function handleTouchMove(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            touches = Array.from(e.touches);
+
+            if (touches.length === 1 && isDragging) {
+                // 單指拖曳
+                const dx = touches[0].clientX - lastX;
+                const dy = touches[0].clientY - lastY;
+
+                translateX += dx;
+                translateY += dy;
+
+                lastX = touches[0].clientX;
+                lastY = touches[0].clientY;
+
+                draw();
+            } else if (touches.length === 2) {
+                // 雙指縮放 - 修正計算邏輯
+                const dx = touches[1].clientX - touches[0].clientX;
+                const dy = touches[1].clientY - touches[0].clientY;
+                const distance = Math.hypot(dx, dy);
+
+                if (lastDistance > 0) {
+                    // 計算縮放因子
+                    const scaleFactor = distance / lastDistance;
+                    const newScale = Math.max(0.2, Math.min(5, scale * scaleFactor));
+
+                    // 計算觸控中心點（螢幕座標）
+                    const centerX = (touches[0].clientX + touches[1].clientX) / 2;
+                    const centerY = (touches[0].clientY + touches[1].clientY) / 2;
+
+                    // 轉換為Canvas相對座標
+                    const rect = canvas.getBoundingClientRect();
+                    const canvasCenterX = centerX - rect.left;
+                    const canvasCenterY = centerY - rect.top;
+
+                    // 計算縮放前在世界座標中的點
+                    const worldX = (canvasCenterX - canvas.width / 2 - translateX) / scale;
+                    const worldY = (canvasCenterY - canvas.height / 2 - translateY) / scale;
+
+                    // 更新縮放
+                    scale = newScale;
+
+                    // 計算新的偏移，保持世界座標點在觸控中心
+                    translateX = canvasCenterX - canvas.width / 2 - worldX * scale;
+                    translateY = canvasCenterY - canvas.height / 2 - worldY * scale;
+
+                    updateUI();
+                    draw();
+
+                    console.log('Scale:', scale.toFixed(2), 'Center:', canvasCenterX.toFixed(0), canvasCenterY.toFixed(0));
+                }
+
+                lastDistance = distance;
+            }
+
+            return false;
+        }
+
+        // 觸控結束
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            touches = Array.from(e.touches);
+
+            if (touches.length === 0) {
+                // 所有手指離開
+                isDragging = false;
+                canvas.classList.remove('grabbing');
+                lastDistance = 0;
+                console.log('All touches ended');
+            } else if (touches.length === 1) {
+                // 從雙指變為單指 - 切換到拖曳模式
+                isDragging = true;
+                lastX = touches[0].clientX;
+                lastY = touches[0].clientY;
+                lastDistance = 0;
+                console.log('Switched to single touch');
+            } else if (touches.length === 2) {
+                // 仍然是雙指 - 重新計算距離
+                const dx = touches[1].clientX - touches[0].clientX;
+                const dy = touches[1].clientY - touches[0].clientY;
+                lastDistance = Math.hypot(dx, dy);
+                console.log('Still 2 fingers, distance:', lastDistance);
+            }
+
+            return false;
+        }
+
+        // 滑鼠事件
+        function handleMouseDown(e) {
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            canvas.classList.add('grabbing');
+        }
+
+        function handleMouseMove(e) {
+            if (!isDragging) return;
+
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+
+            translateX += dx;
+            translateY += dy;
+
+            lastX = e.clientX;
+            lastY = e.clientY;
+
+            draw();
+        }
+
+        function handleMouseUp() {
+            isDragging = false;
+            canvas.classList.remove('grabbing');
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            const newScale = scale * delta;
+
+            // 以滑鼠位置為中心縮放
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            translateX -= (x - canvas.width / 2) * (delta - 1);
+            translateY -= (y - canvas.height / 2) * (delta - 1);
+
+            scale = Math.max(0.2, Math.min(5, newScale));
+
+            updateUI();
+            draw();
+        }
+
+        // 繪製
+        function draw() {
+            if (!ctx) return;
+
+            // 清除畫布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 填充淡色背景提高對比度
+            ctx.fillStyle = '#f1f5f9';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 保存狀態
+            ctx.save();
+
+            // 應用變換
+            ctx.translate(canvas.width / 2 + translateX, canvas.height / 2 + translateY);
+            ctx.scale(scale, scale);
+
+            if (scale >= 0.45) {
+                // 45%以上：繪製完整圖層（暫時使用原色，後續可加白色效果）
+                if (svgImageFull) {
+                    ctx.drawImage(svgImageFull, -svgImageFull.width / 2, -svgImageFull.height / 2);
+                }
+            } else {
+                // 45%以下：顯示基礎圖層
+                if (svgImageBasic) {
+                    ctx.drawImage(svgImageBasic, -svgImageBasic.width / 2, -svgImageBasic.height / 2);
+                }
+            }
+
+            // 恢復狀態
+            ctx.restore();
+        }
+
+        // 更新UI
+        function updateUI() {
+            const zoomPercent = Math.round(scale * 100);
+            document.getElementById('zoomLevel').textContent = zoomPercent + '%';
+
+            // 圖層邏輯 - 45%以上顯示全部圖層
+            const layerInfo = document.getElementById('layerInfo');
+            if (scale >= 0.45) {
+                layerInfo.textContent = '全部圖層 (g2+g1+標記)';
+                layerInfo.style.color = '#4ade80';
+            } else {
+                layerInfo.textContent = '基礎圖層 (g2+標記)';
+                layerInfo.style.color = '#94a3b8';
+            }
+        }
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            initCanvas();
+            loadSVG();
+            updateUI();
+
+            // 完全阻止頁面縮放
+            document.addEventListener('touchstart', function(e) {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, {passive: false});
+
+            // 阻止iOS的彈性滾動
+            document.body.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+            }, {passive: false});
+
+            // 鍵盤快捷鍵
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'r' || e.key === 'R') {
+                    document.getElementById('reload').click();
+                } else if (e.key === ' ') {
+                    e.preventDefault();
+                    document.getElementById('reset').click();
+                }
+            });
+        });
+
+        // 檢查環境
+        if (location.protocol === 'file:') {
+            alert('建議使用本地伺服器：\npython -m http.server 8000');
+        }
+    </script>
+</body>
+</html>
