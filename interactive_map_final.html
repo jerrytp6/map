@@ -121,6 +121,14 @@
             opacity: 0.8;
         }
 
+        /* 觸控輔助 - 增加觸控目標大小 */
+        @media (max-width: 768px) {
+            .vendor-area {
+                min-width: 44px;
+                min-height: 44px;
+            }
+        }
+
         /* 控制按鈕 */
         .controls {
             position: fixed;
@@ -129,8 +137,17 @@
             z-index: 1000;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             transition: opacity 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                bottom: 20px;
+                top: auto;
+                right: 20px;
+                gap: 15px;
+            }
         }
 
         .controls.hide {
@@ -138,26 +155,53 @@
         }
 
         .btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 25px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
             border: none;
             background: rgba(255,255,255,0.95);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
             font-size: 24px;
             cursor: pointer;
             touch-action: manipulation;
             color: #334155;
             font-weight: 600;
-            transition: transform 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        @media (max-width: 768px) {
+            .btn {
+                width: 64px;
+                height: 64px;
+                border-radius: 32px;
+                font-size: 26px;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            }
         }
 
         .btn:active {
-            transform: scale(0.95);
+            transform: scale(0.9);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
         .btn:hover {
             background: #fff;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+
+        /* 手機上的觸控反饋 */
+        @media (max-width: 768px) {
+            .btn:active {
+                transform: scale(0.85);
+                background: rgba(59, 130, 246, 0.1);
+            }
         }
 
         /* 搜尋框 */
@@ -171,31 +215,73 @@
             transition: opacity 0.3s ease;
         }
 
+        @media (max-width: 768px) {
+            .search-box {
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: calc(100% - 40px);
+                max-width: 350px;
+            }
+        }
+
         .search-box.hide {
             opacity: 0.3;
         }
 
         .search-input {
-            padding: 12px 16px;
+            padding: 14px 18px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             background: rgba(255,255,255,0.95);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            font-size: 14px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            font-size: 16px;
             width: 200px;
             outline: none;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            box-shadow: 0 6px 25px rgba(59, 130, 246, 0.3);
+            background: rgba(255,255,255,0.98);
+        }
+
+        @media (max-width: 768px) {
+            .search-input {
+                padding: 16px 20px;
+                font-size: 16px;
+                width: calc(100% - 80px);
+                border-radius: 16px;
+            }
         }
 
         .search-btn {
-            padding: 12px 20px;
+            padding: 14px 24px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             background: #3b82f6;
             color: white;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
-            transition: background 0.2s;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            touch-action: manipulation;
+        }
+
+        .search-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .search-btn {
+                padding: 16px 20px;
+                border-radius: 16px;
+                min-width: 60px;
+            }
         }
 
         .search-btn:hover {
@@ -294,16 +380,27 @@
             position: fixed;
             bottom: 20px;
             left: 20px;
-            padding: 10px 15px;
+            padding: 12px 18px;
             background: rgba(255,255,255,0.95);
             color: #334155;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 14px;
             pointer-events: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             z-index: 900;
             transition: opacity 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .info {
+                left: 50%;
+                transform: translateX(-50%);
+                bottom: 100px;
+                font-size: 13px;
+                padding: 10px 16px;
+            }
         }
 
         .info.hide {
@@ -450,6 +547,20 @@
         let lastY = 0;
         let touches = [];
         let lastDistance = 0;
+        let initialDistance = 0;
+        let scaleStart = 1;
+        let centerX = 0;
+        let centerY = 0;
+        let isScaling = false;
+        let velocityX = 0;
+        let velocityY = 0;
+        let lastTime = 0;
+        let momentum = null;
+        let tapStartTime = 0;
+        let tapStartX = 0;
+        let tapStartY = 0;
+        let hasMoved = false;
+        let doubleTapTimer = null;
 
         // 廠商資料
         let vendorData = {};
@@ -579,11 +690,62 @@
 
                     element.addEventListener('touchstart', (e) => {
                         e.stopPropagation();
-                        const vendorName = svgToVendor[svgId];
-                        if (vendorName) {
-                            handleVendorClick(vendorName, e);
+                        tapStartTime = Date.now();
+                        tapStartX = e.touches[0].clientX;
+                        tapStartY = e.touches[0].clientY;
+                        hasMoved = false;
+
+                        // 觸覺反饋 - 輕微縮放動畫
+                        element.style.transform = 'scale(0.98)';
+                        element.style.transition = 'transform 0.1s ease';
+                    }, {passive: false});
+
+                    element.addEventListener('touchmove', (e) => {
+                        const moveX = e.touches[0].clientX;
+                        const moveY = e.touches[0].clientY;
+                        const distance = Math.hypot(moveX - tapStartX, moveY - tapStartY);
+
+                        if (distance > 10) {
+                            hasMoved = true;
+                            // 恢復原始大小
+                            element.style.transform = '';
                         }
-                    }, {passive: true});
+                    }, {passive: false});
+
+                    element.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const endTime = Date.now();
+                        const tapDuration = endTime - tapStartTime;
+
+                        // 恢復原始大小
+                        element.style.transform = '';
+                        setTimeout(() => {
+                            element.style.transition = '';
+                        }, 100);
+
+                        // 檢查是否為有效點擊
+                        if (!hasMoved && tapDuration < 500) {
+                            const vendorName = svgToVendor[svgId];
+                            if (vendorName) {
+                                // 防止雙重觸發
+                                if (doubleTapTimer) {
+                                    clearTimeout(doubleTapTimer);
+                                    doubleTapTimer = null;
+                                    return;
+                                }
+
+                                doubleTapTimer = setTimeout(() => {
+                                    doubleTapTimer = null;
+                                    handleVendorClick(vendorName, {
+                                        clientX: tapStartX,
+                                        clientY: tapStartY
+                                    });
+                                }, 100);
+                            }
+                        }
+                    }, {passive: false});
                 }
             });
 
@@ -797,10 +959,23 @@
                 }
             });
 
-            // 觸控事件
+            // 觸控事件 - 改善觸控回應
             container.addEventListener('touchstart', handleTouchStart, {passive: false});
             container.addEventListener('touchmove', handleTouchMove, {passive: false});
             container.addEventListener('touchend', handleTouchEnd, {passive: false});
+            container.addEventListener('touchcancel', handleTouchEnd, {passive: false});
+
+            // 雙指觸控優化
+            document.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 1) {
+                    e.preventDefault();
+                }
+            }, {passive: false});
+
+            // 禁止系統預設手勢
+            document.addEventListener('gesturestart', (e) => e.preventDefault());
+            document.addEventListener('gesturechange', (e) => e.preventDefault());
+            document.addEventListener('gestureend', (e) => e.preventDefault());
 
             // 滑鼠事件
             container.addEventListener('mousedown', handleMouseDown);
@@ -873,50 +1048,104 @@
         // 觸控處理
         function handleTouchStart(e) {
             e.preventDefault();
+            clearMomentum();
             touches = Array.from(e.touches);
+            const currentTime = Date.now();
 
             if (touches.length === 1) {
                 isDragging = true;
+                isScaling = false;
                 lastX = touches[0].clientX;
                 lastY = touches[0].clientY;
+                lastTime = currentTime;
+                velocityX = 0;
+                velocityY = 0;
                 svgContainer.classList.add('grabbing');
             } else if (touches.length === 2) {
                 isDragging = false;
+                isScaling = true;
+
+                // 計算雙指中心點
+                centerX = (touches[0].clientX + touches[1].clientX) / 2;
+                centerY = (touches[0].clientY + touches[1].clientY) / 2;
+
+                // 計算初始距離
                 const dx = touches[1].clientX - touches[0].clientX;
                 const dy = touches[1].clientY - touches[0].clientY;
-                lastDistance = Math.hypot(dx, dy);
+                initialDistance = Math.hypot(dx, dy);
+                lastDistance = initialDistance;
+                scaleStart = scale;
             }
         }
 
         function handleTouchMove(e) {
             e.preventDefault();
             touches = Array.from(e.touches);
+            const currentTime = Date.now();
+            const deltaTime = currentTime - lastTime;
 
-            if (touches.length === 1 && isDragging) {
+            if (touches.length === 1 && isDragging && !isScaling) {
                 const dx = touches[0].clientX - lastX;
                 const dy = touches[0].clientY - lastY;
+
+                // 計算速度
+                if (deltaTime > 0) {
+                    velocityX = dx / deltaTime * 1000;
+                    velocityY = dy / deltaTime * 1000;
+                }
 
                 translateX += dx;
                 translateY += dy;
 
+                // 即時邊界檢查
+                applyBoundaryConstraints();
+
                 lastX = touches[0].clientX;
                 lastY = touches[0].clientY;
+                lastTime = currentTime;
 
                 updateTransform();
-            } else if (touches.length === 2) {
+            } else if (touches.length === 2 && isScaling) {
+                // 計算新的中心點
+                const newCenterX = (touches[0].clientX + touches[1].clientX) / 2;
+                const newCenterY = (touches[0].clientY + touches[1].clientY) / 2;
+
+                // 計算距離變化
                 const dx = touches[1].clientX - touches[0].clientX;
                 const dy = touches[1].clientY - touches[0].clientY;
                 const distance = Math.hypot(dx, dy);
 
-                if (lastDistance > 0) {
-                    const scaleFactor = distance / lastDistance;
-                    scale = Math.max(0.2, Math.min(5, scale * scaleFactor));
+                if (initialDistance > 0) {
+                    // 使用更平滑的縮放算法
+                    const scaleRatio = distance / initialDistance;
+                    const newScale = Math.max(0.1, Math.min(8, scaleStart * scaleRatio));
+
+                    // 計算以中心點為基準的縮放偏移
+                    const rect = svgContainer.getBoundingClientRect();
+                    const containerCenterX = rect.width / 2;
+                    const containerCenterY = rect.height / 2;
+
+                    const scaleChange = newScale / scale;
+                    const adjustX = (centerX - rect.left - containerCenterX - translateX) * (scaleChange - 1);
+                    const adjustY = (centerY - rect.top - containerCenterY - translateY) * (scaleChange - 1);
+
+                    translateX -= adjustX;
+                    translateY -= adjustY;
+
+                    // 處理中心點移動
+                    const centerDx = newCenterX - centerX;
+                    const centerDy = newCenterY - centerY;
+                    translateX += centerDx;
+                    translateY += centerDy;
+
+                    scale = newScale;
+                    centerX = newCenterX;
+                    centerY = newCenterY;
+
                     checkLayerSwitch();
                     updateTransform();
                     updateUI();
                 }
-
-                lastDistance = distance;
             }
         }
 
@@ -925,9 +1154,23 @@
             touches = Array.from(e.touches);
 
             if (touches.length === 0) {
+                if (isDragging && (Math.abs(velocityX) > 100 || Math.abs(velocityY) > 100)) {
+                    startMomentum();
+                }
+
                 isDragging = false;
+                isScaling = false;
                 svgContainer.classList.remove('grabbing');
                 lastDistance = 0;
+                initialDistance = 0;
+            } else if (touches.length === 1 && isScaling) {
+                // 從雙指切換到單指
+                isScaling = false;
+                isDragging = true;
+                lastX = touches[0].clientX;
+                lastY = touches[0].clientY;
+                lastTime = Date.now();
+                svgContainer.classList.add('grabbing');
             }
         }
 
@@ -948,6 +1191,9 @@
 
             translateX += dx;
             translateY += dy;
+
+            // 即時邊界檢查
+            applyBoundaryConstraints();
 
             lastX = e.clientX;
             lastY = e.clientY;
@@ -977,6 +1223,83 @@
             checkLayerSwitch();
             updateTransform();
             updateUI();
+        }
+
+        // 慣性滾動
+        function startMomentum() {
+            if (momentum) clearInterval(momentum);
+
+            const friction = 0.95;
+            const minVelocity = 5;
+
+            momentum = setInterval(() => {
+                velocityX *= friction;
+                velocityY *= friction;
+
+                if (Math.abs(velocityX) < minVelocity && Math.abs(velocityY) < minVelocity) {
+                    clearMomentum();
+                    return;
+                }
+
+                translateX += velocityX * 0.016; // 60fps
+                translateY += velocityY * 0.016;
+
+                // 邊界檢查和彈性
+                applyBoundaryConstraints();
+                updateTransform();
+            }, 16);
+        }
+
+        function clearMomentum() {
+            if (momentum) {
+                clearInterval(momentum);
+                momentum = null;
+            }
+        }
+
+        // 邊界約束和彈性
+        function applyBoundaryConstraints() {
+            if (!mainSvg) return;
+
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+            const svgWidth = mainSvg.getBoundingClientRect().width;
+            const svgHeight = mainSvg.getBoundingClientRect().height;
+
+            // 計算最大允許的位移
+            const maxTranslateX = Math.max(0, (svgWidth - containerWidth) / 2);
+            const maxTranslateY = Math.max(0, (svgHeight - containerHeight) / 2);
+
+            const damping = isDragging ? 0.3 : 0.1; // 拖曳時用較強的阻尼
+            let bounced = false;
+
+            // X 軸邊界檢查
+            if (translateX > maxTranslateX) {
+                translateX = maxTranslateX + (translateX - maxTranslateX) * damping;
+                if (!isDragging) velocityX *= -0.3;
+                bounced = true;
+            } else if (translateX < -maxTranslateX) {
+                translateX = -maxTranslateX + (translateX + maxTranslateX) * damping;
+                if (!isDragging) velocityX *= -0.3;
+                bounced = true;
+            }
+
+            // Y 軸邊界檢查
+            if (translateY > maxTranslateY) {
+                translateY = maxTranslateY + (translateY - maxTranslateY) * damping;
+                if (!isDragging) velocityY *= -0.3;
+                bounced = true;
+            } else if (translateY < -maxTranslateY) {
+                translateY = -maxTranslateY + (translateY + maxTranslateY) * damping;
+                if (!isDragging) velocityY *= -0.3;
+                bounced = true;
+            }
+
+            // 如果有彈性，減少速度
+            if (bounced && !isDragging) {
+                velocityX *= 0.7;
+                velocityY *= 0.7;
+            }
         }
 
         // 更新UI
