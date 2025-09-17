@@ -343,6 +343,25 @@
             background: #2563eb;
         }
 
+        /* Info Window 遮罩層 */
+        #infoWindowOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            z-index: 1999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        #infoWindowOverlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
         /* Info Window - 平滑動畫 */
         #infoWindow {
             position: fixed;
@@ -568,8 +587,11 @@
         <div class="controls" id="controls">
             <button class="btn" id="zoomIn" title="放大">+</button>
             <button class="btn" id="zoomOut" title="縮小">−</button>
-            <button class="btn" id="reload" title="重新載入">🔄</button>
+            <button class="btn" id="reset" title="重置">⟲</button>
         </div>
+
+        <!-- Info Window 遮罩層 -->
+        <div id="infoWindowOverlay" onclick="closeInfoWindow()"></div>
 
         <!-- Info Window -->
         <div id="infoWindow">
@@ -747,6 +769,9 @@
 
                 // 初始化地圖位置
                 initializeMapPosition();
+
+                // 檢查初始縮放是否需要切換圖層
+                await checkLayerSwitch();
 
                 document.getElementById('loading').style.display = 'none';
                 ;
@@ -958,17 +983,30 @@
             // 2. 隱藏其他UI元素
             document.getElementById('searchBox').classList.add('hide');
             document.getElementById('controls').classList.add('hide');
-            document.getElementById('infoPanel').classList.add('hide');
 
-            // 3. 高亮選中的元素（原地高亮，不放大）
-            vendor.svgIds.forEach(svgId => {
-                const element = mainSvg.querySelector(`#${svgId}`);
-                if (element) {
-                    element.style.fill = '#3b82f6';
-                    element.style.stroke = '#ffffff';
-                    element.style.strokeWidth = '2px';
-                    element.style.filter = 'brightness(1.2)';
-                }
+            // 3. 處理所有廠商元素的顯示
+            Object.keys(vendorData).forEach(otherVendorName => {
+                const otherVendor = vendorData[otherVendorName];
+                otherVendor.svgIds.forEach(svgId => {
+                    const element = mainSvg.querySelector(`#${svgId}`);
+                    if (element) {
+                        if (otherVendorName === vendorName) {
+                            // 放大選中的元素，保持原色和位置
+                            const bbox = element.getBBox();
+                            const centerX = bbox.x + bbox.width / 2;
+                            const centerY = bbox.y + bbox.height / 2;
+
+                            // 添加發光效果而非放大，避免文字重疊
+                            element.style.filter = 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6)) brightness(1.1)';
+                            element.style.transition = 'filter 0.3s ease';
+                            element.style.zIndex = '100';
+                        } else {
+                            // 模糊其他廠商元素
+                            element.style.filter = 'blur(2px) opacity(0.3)';
+                            element.style.transition = 'filter 0.3s ease, opacity 0.3s ease';
+                        }
+                    }
+                });
             });
 
             // 4. 顯示退出按鈕
@@ -981,18 +1019,24 @@
 
             focusMode = false;
 
-            // 移除高亮效果
-            if (currentHighlight && vendorData[currentHighlight]) {
-                vendorData[currentHighlight].svgIds.forEach(svgId => {
+            // 恢復所有廠商元素的原始狀態
+            Object.keys(vendorData).forEach(vendorName => {
+                const vendor = vendorData[vendorName];
+                vendor.svgIds.forEach(svgId => {
                     const element = mainSvg.querySelector(`#${svgId}`);
                     if (element) {
                         element.style.fill = '';
                         element.style.stroke = '';
                         element.style.strokeWidth = '';
                         element.style.filter = '';
+                        element.style.opacity = '';
+                        element.style.transition = '';
+                        element.style.transform = '';
+                        element.style.transformOrigin = '';
+                        element.style.zIndex = '';
                     }
                 });
-            }
+            });
 
             currentHighlight = null;
 
@@ -1000,13 +1044,14 @@
             document.getElementById('glassOverlay').classList.remove('active');
             document.getElementById('searchBox').classList.remove('hide');
             document.getElementById('controls').classList.remove('hide');
-            document.getElementById('infoPanel').classList.remove('hide');
             document.getElementById('exitFocus').classList.remove('show');
 
             // 關閉 Info Window（只關閉視窗，不再調用 closeInfoWindow 避免循環）
             const infoWindow = document.getElementById('infoWindow');
+            const overlay = document.getElementById('infoWindowOverlay');
             if (infoWindow.classList.contains('show')) {
                 infoWindow.classList.remove('show');
+                overlay.classList.remove('show');
             }
         }
 
@@ -1085,6 +1130,10 @@
             infoWindow.style.left = Math.min(x, maxX) + 'px';
             infoWindow.style.top = Math.min(y, maxY) + 'px';
 
+            // 顯示遮罩層和info窗口
+            const overlay = document.getElementById('infoWindowOverlay');
+            overlay.classList.add('show');
+
             // 觸發平滑動畫
             setTimeout(() => {
                 infoWindow.classList.add('show');
@@ -1094,7 +1143,10 @@
         // 關閉 Info Window
         function closeInfoWindow() {
             const infoWindow = document.getElementById('infoWindow');
+            const overlay = document.getElementById('infoWindowOverlay');
+
             infoWindow.classList.remove('show');
+            overlay.classList.remove('show');
 
             // 同時退出聚焦模式
             if (focusMode) {
@@ -1204,8 +1256,14 @@
             });
 
 
-            document.getElementById('reload').addEventListener('click', async () => {
-                location.reload();
+            document.getElementById('reset').addEventListener('click', () => {
+                scale = initialScale;
+                translateX = 0;
+                translateY = 0;
+                exitFocusMode();
+                centerMapOnScreen();
+                checkLayerSwitch();
+                updateTransform();
             });
 
             // Enter 鍵搜尋
