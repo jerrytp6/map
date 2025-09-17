@@ -793,9 +793,6 @@
                 if (buttonGroup.hoverRect && buttonGroup.hoverRect.parentNode) {
                     buttonGroup.hoverRect.parentNode.removeChild(buttonGroup.hoverRect);
                 }
-                if (buttonGroup.textGroup && buttonGroup.textGroup.parentNode) {
-                    buttonGroup.textGroup.parentNode.removeChild(buttonGroup.textGroup);
-                }
             });
             vendorButtons = {};
 
@@ -852,39 +849,7 @@
                 hoverRect.style.pointerEvents = 'none';
                 hoverRect.classList.add('vendor-hover-indicator');
 
-                // 創建文字標籤（只在較大縮放時顯示）
-                const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                textGroup.classList.add('vendor-label');
-                textGroup.style.opacity = scale > 0.6 ? '1' : '0';
-                textGroup.style.transition = 'opacity 0.3s ease';
-                textGroup.style.pointerEvents = 'none';
-
-                // 添加唯一標識防止重複
-                textGroup.setAttribute('data-vendor', vendorName);
-
-                const textBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-
-                text.textContent = vendorName;
-                text.setAttribute('x', (minX + maxX) / 2);
-                text.setAttribute('y', minY - 8);
-                text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('font-size', '12');
-                text.setAttribute('font-weight', 'bold');
-                text.setAttribute('fill', '#1e293b');
-
-                const textBBox = text.getBBox ? text.getBBox() : {x: 0, y: 0, width: vendorName.length * 8, height: 14};
-                textBg.setAttribute('x', textBBox.x - 4);
-                textBg.setAttribute('y', textBBox.y - 2);
-                textBg.setAttribute('width', textBBox.width + 8);
-                textBg.setAttribute('height', textBBox.height + 4);
-                textBg.setAttribute('fill', 'rgba(255, 255, 255, 0.9)');
-                textBg.setAttribute('stroke', '#cbd5e1');
-                textBg.setAttribute('stroke-width', '1');
-                textBg.setAttribute('rx', '3');
-
-                textGroup.appendChild(textBg);
-                textGroup.appendChild(text);
+                // 移除文字標籤創建 - 使用原始圖層的廠商名稱
 
                 // 事件處理
                 let tapStartTime, tapStartX, tapStartY, hasMoved;
@@ -941,47 +906,15 @@
                 // 添加到SVG
                 mainSvg.appendChild(hoverRect);
                 mainSvg.appendChild(button);
-                mainSvg.appendChild(textGroup);
 
                 vendorButtons[vendorName] = {
                     button: button,
-                    hoverRect: hoverRect,
-                    textGroup: textGroup
+                    hoverRect: hoverRect
                 };
             });
         }
 
-        // 更新廠商標籤顯示
-        function updateVendorLabels() {
-            if (!mainSvg) return;
-
-            // 清除所有現有的重複標籤
-            const existingLabels = mainSvg.querySelectorAll('.vendor-label');
-            const seenVendors = new Set();
-
-            existingLabels.forEach(label => {
-                const vendorName = label.getAttribute('data-vendor');
-                if (seenVendors.has(vendorName)) {
-                    // 重複的標籤，移除
-                    label.remove();
-                } else {
-                    seenVendors.add(vendorName);
-                    // 更新顯示狀態
-                    label.style.opacity = scale > 0.6 ? '1' : '0';
-                }
-            });
-
-            // 也更新 vendorButtons 中的標籤
-            Object.values(vendorButtons).forEach(({textGroup}) => {
-                if (textGroup && !textGroup.parentNode) {
-                    // 如果 textGroup 不在 DOM 中，就重新添加
-                    mainSvg.appendChild(textGroup);
-                }
-                if (textGroup) {
-                    textGroup.style.opacity = scale > 0.6 ? '1' : '0';
-                }
-            });
-        }
+        // updateVendorLabels 函數已移除 - 不再創建程式標籤
 
         // 顯示 SVG 並添加互動
         async function displaySVG(svgContent) {
@@ -1225,9 +1158,6 @@
 
             const transform = `translate(-50%, -50%) translate(${translateX}px, ${translateY}px) scale(${scale})`;
             svgContainer.style.transform = transform;
-
-            // 更新廠商標籤顯示
-            updateVendorLabels();
         }
 
         // 初始化事件處理
@@ -1376,9 +1306,6 @@
                     if (buttonGroup.hoverRect && buttonGroup.hoverRect.parentNode) {
                         buttonGroup.hoverRect.parentNode.removeChild(buttonGroup.hoverRect);
                     }
-                    if (buttonGroup.textGroup && buttonGroup.textGroup.parentNode) {
-                        buttonGroup.textGroup.parentNode.removeChild(buttonGroup.textGroup);
-                    }
                 });
                 vendorButtons = {};
 
@@ -1391,9 +1318,6 @@
                 setTimeout(() => {
                     notice.classList.remove('show');
                 }, 2000);
-            } else {
-                // 即使沒有切換圖層，也要更新標籤顯示
-                updateVendorLabels();
             }
         }
 
