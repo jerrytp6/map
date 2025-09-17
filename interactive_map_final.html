@@ -572,6 +572,27 @@
 </head>
 <body>
     <div id="app">
+        <!-- SVG Filters 定義 -->
+        <svg class="svg-filters">
+            <defs>
+                <filter id="vendor-highlight" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
+                    <feFlood flood-color="rgba(59, 130, 246, 0.8)" flood-opacity="1" result="color"/>
+                    <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+                    <feOffset in="shadow" dx="0" dy="0" result="offset"/>
+                    <feMerge result="merge">
+                        <feMergeNode in="offset"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                    <feColorMatrix in="merge" type="saturate" values="1.3" result="final"/>
+                </filter>
+                <filter id="vendor-blur" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+                    <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.3 0"/>
+                </filter>
+            </defs>
+        </svg>
+
         <!-- SVG 容器 -->
         <div id="svgContainer"></div>
 
@@ -1004,13 +1025,13 @@
                             const centerX = bbox.x + bbox.width / 2;
                             const centerY = bbox.y + bbox.height / 2;
 
-                            // 添加發光效果而非放大，避免文字重疊
-                            element.style.filter = 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6)) brightness(1.1)';
+                            // 使用SVG原生filter，避免瀏覽器相容性問題
+                            element.setAttribute('filter', 'url(#vendor-highlight)');
                             element.style.transition = 'filter 0.3s ease';
                             element.style.zIndex = '100';
                         } else {
-                            // 模糊其他廠商元素
-                            element.style.filter = 'blur(2px) opacity(0.3)';
+                            // 使用SVG原生filter模糊其他廠商元素
+                            element.setAttribute('filter', 'url(#vendor-blur)');
                             element.style.transition = 'filter 0.3s ease, opacity 0.3s ease';
                         }
                     }
@@ -1042,6 +1063,7 @@
                         element.style.transform = '';
                         element.style.transformOrigin = '';
                         element.style.zIndex = '';
+                        element.removeAttribute('filter');
                     }
                 });
             });
