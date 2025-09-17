@@ -48,9 +48,27 @@
             position: absolute;
             top: 50%;
             left: 50%;
+            transform: translate(-50%, -50%);
             transform-origin: center center;
             cursor: grab;
             transition: filter 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 手機版SVG容器調整 */
+        @media (max-width: 768px) {
+            #svgContainer {
+                /* 手機版上異一些，防止被搜尋框遮擋 */
+                top: 52%;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @media (max-width: 768px) and (orientation: landscape) {
+            #svgContainer {
+                /* 橫屏時居中 */
+                top: 50%;
+                transform: translate(-50%, -50%);
+            }
         }
 
         #svgContainer.grabbing {
@@ -539,7 +557,8 @@
         // 全域變數
         let svgContainer;
         let mainSvg;
-        let scale = 0.33;
+        let scale = getInitialScale();
+        let initialScale = scale;
         let translateX = 0;
         let translateY = 0;
         let isDragging = false;
@@ -569,6 +588,73 @@
         let svgBasicContent = null;
         let svgFullContent = null;
         let focusMode = false;
+
+        // 根據螢幕大小計算初始縮放比例
+        function getInitialScale() {
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            const isMobile = screenWidth <= 768;
+
+            if (isMobile) {
+                // 手機版：根據螢幕尺寸調整
+                if (screenWidth < 400) {
+                    return 0.25; // 小螢幕手機
+                } else if (screenWidth < 600) {
+                    return 0.3;  // 中等手機
+                } else {
+                    return 0.35; // 大螢幕手機或平板
+                }
+            } else {
+                // 桌面版
+                return 0.33;
+            }
+        }
+
+        // 初始化地圖位置和縮放
+        function initializeMapPosition() {
+            // 重置位置到中央
+            translateX = 0;
+            translateY = 0;
+            scale = getInitialScale();
+            initialScale = scale;
+
+            // 等SVG載入後再調整位置
+            if (mainSvg) {
+                setTimeout(() => {
+                    centerMapOnScreen();
+                    updateTransform();
+                    updateUI();
+                }, 100);
+            }
+        }
+
+        // 將地圖置中於螢幕
+        function centerMapOnScreen() {
+            if (!mainSvg) return;
+
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+            const isMobile = containerWidth <= 768;
+
+            // 重置位置
+            translateX = 0;
+            translateY = 0;
+
+            // 手機版的特殊處理
+            if (isMobile) {
+                const isLandscape = containerWidth > containerHeight;
+
+                if (isLandscape) {
+                    // 橫屏時居中
+                    translateX = 0;
+                    translateY = 0;
+                } else {
+                    // 竖屏時略微上移，面對虎口區域
+                    translateX = 0;
+                    translateY = -containerHeight * 0.05; // 上移5%
+                }
+            }
+        }
 
         // 載入廠商資料
         async function loadVendorData() {
@@ -646,6 +732,9 @@
                 }
 
                 await displaySVG(svgBasicContent);
+
+                // 初始化地圖位置
+                initializeMapPosition();
 
                 document.getElementById('loading').style.display = 'none';
                 updateUI();
@@ -934,7 +1023,7 @@
         function updateTransform() {
             if (!svgContainer) return;
 
-            const transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            const transform = `translate(-50%, -50%) translate(${translateX}px, ${translateY}px) scale(${scale})`;
             svgContainer.style.transform = transform;
         }
 
@@ -999,10 +1088,11 @@
             });
 
             document.getElementById('reset').addEventListener('click', () => {
-                scale = 0.33;
+                scale = initialScale;
                 translateX = 0;
                 translateY = 0;
                 exitFocusMode();
+                centerMapOnScreen();
                 checkLayerSwitch();
                 updateTransform();
                 updateUI();
@@ -1024,6 +1114,39 @@
                 if (e.key === 'Escape' && focusMode) {
                     exitFocusMode();
                 }
+            });
+
+            // 螢幕方向改變或尺寸變更時重新計算位置
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    const newScale = getInitialScale();
+                    // 只在初始狀態或者縮放比例差得太多時才重設
+                    if (Math.abs(scale - initialScale) < 0.1 || Math.abs(scale - newScale) > 0.2) {
+                        scale = newScale;
+                        initialScale = newScale;
+                        centerMapOnScreen();
+                        updateTransform();
+                        updateUI();
+                    } else {
+                        // 只調整位置，保持縮放比例
+                        applyBoundaryConstraints();
+                        updateTransform();
+                    }
+                }, 250);
+            });
+
+            // 方向改變事件（手機專用）
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    const newScale = getInitialScale();
+                    scale = newScale;
+                    initialScale = newScale;
+                    centerMapOnScreen();
+                    updateTransform();
+                    updateUI();
+                }, 500); // 等待方向變更完成
             });
         }
 
@@ -1322,6 +1445,15 @@
             initEventHandlers();
             await loadVendorData();
             await loadSVG();
+
+            // 稍後再次確保位置正確（防止初始化時序問題）
+            setTimeout(() => {
+                if (mainSvg) {
+                    centerMapOnScreen();
+                    updateTransform();
+                }
+            }, 500);
+
             updateUI();
         });
     </script>
