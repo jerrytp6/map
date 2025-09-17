@@ -47,7 +47,7 @@
             top: 0;
             left: 0;
             overflow: hidden;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            background: #ffffff;
             touch-action: none;
         }
 
@@ -99,7 +99,7 @@
                 circle at var(--x, 50%) var(--y, 50%),
                 transparent 0,
                 transparent var(--spotlight-size, 200px),
-                rgba(0, 0, 0, 0.35) calc(var(--spotlight-size, 200px) + 50px)
+                rgba(0, 0, 0, 0.55) calc(var(--spotlight-size, 200px) + 50px)
             );
             backdrop-filter: blur(0px);
             -webkit-backdrop-filter: blur(0px);
@@ -123,7 +123,7 @@
             }
         }
 
-        /* 背景模糊效果 - 不影響聚光燈區域 */
+        /* 背景模糊效果 - 暫時關閉以測試明亮區域 */
         #glassOverlay::before {
             content: '';
             position: absolute;
@@ -131,8 +131,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
             -webkit-mask: radial-gradient(
                 circle at var(--x, 50%) var(--y, 50%),
                 transparent 0,
@@ -530,37 +530,6 @@
             text-align: center;
         }
 
-        /* 退出聚焦按鈕 */
-        #exitFocus {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            padding: 14px 24px;
-            background: rgba(239, 68, 68, 0.9);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            z-index: 2100;
-            opacity: 0;
-            transform: translateY(20px);
-            visibility: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
-        }
-
-        #exitFocus.show {
-            opacity: 1;
-            transform: translateY(0);
-            visibility: visible;
-        }
-
-        #exitFocus:hover {
-            background: rgba(220, 38, 38, 0.95);
-            transform: scale(1.05);
-        }
 
         /* 圖層提示 */
         .layer-notice {
@@ -653,8 +622,6 @@
             <div id="infoContent"></div>
         </div>
 
-        <!-- 退出聚焦按鈕 -->
-        <button id="exitFocus" onclick="exitFocusMode()">退出聚焦模式 (ESC)</button>
     </div>
 
     <script>
@@ -1052,7 +1019,7 @@
                             // 使用SVG原生filter，避免瀏覽器相容性問題
                             element.setAttribute('filter', 'url(#vendor-highlight)');
                             element.style.transition = 'filter 0.3s ease';
-                            element.style.zIndex = '100';
+                            element.style.zIndex = '150';
                         } else {
                             // 使用SVG原生filter模糊其他廠商元素
                             element.setAttribute('filter', 'url(#vendor-blur)');
@@ -1062,8 +1029,6 @@
                 });
             });
 
-            // 4. 顯示退出按鈕
-            document.getElementById('exitFocus').classList.add('show');
         }
 
         // 退出聚焦模式
@@ -1087,7 +1052,17 @@
                         element.style.transform = '';
                         element.style.transformOrigin = '';
                         element.style.zIndex = '';
+                        element.style.position = '';
                         element.removeAttribute('filter');
+
+                        // 清除SVG原生transform
+                        const currentTransform = element.getAttribute('transform') || '';
+                        const cleanTransform = currentTransform.replace(/scale\([^)]*\)/g, '').trim();
+                        if (cleanTransform) {
+                            element.setAttribute('transform', cleanTransform);
+                        } else {
+                            element.removeAttribute('transform');
+                        }
                     }
                 });
             });
@@ -1098,7 +1073,6 @@
             document.getElementById('glassOverlay').classList.remove('active');
             document.getElementById('searchBox').classList.remove('hide');
             document.getElementById('controls').classList.remove('hide');
-            document.getElementById('exitFocus').classList.remove('show');
 
             // 關閉 Info Window（只關閉視窗，不再調用 closeInfoWindow 避免循環）
             const infoWindow = document.getElementById('infoWindow');
