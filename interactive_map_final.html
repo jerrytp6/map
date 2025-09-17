@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimum-scale=1.0, maximum-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>互動式地圖系統 - 最終版</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html {
+            touch-action: manipulation;
+            -ms-touch-action: manipulation;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            touch-action: none;
+            -webkit-text-size-adjust: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        #app {
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            touch-action: none;
+        }
+
+        /* SVG 容器 */
+        #svgContainer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center center;
+            cursor: grab;
+            transition: filter 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #svgContainer.grabbing {
+            cursor: grabbing;
+        }
+
+        /* SVG 容器 - 移除模糊效果 */
+        #svgContainer.focus-active {
+            /* 不再對整個容器模糊 */
+        }
+
+        /* 毛玻璃遮罩層 - 中心區域透明 */
+        #glassOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                circle at var(--x, 50%) var(--y, 50%),
+                transparent 0,
+                transparent 150px,
+                rgba(15, 23, 42, 0.3) 200px,
+                rgba(15, 23, 42, 0.5) 350px,
+                rgba(15, 23, 42, 0.7) 100%
+            );
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            -webkit-mask-image: radial-gradient(
+                circle at var(--x, 50%) var(--y, 50%),
+                transparent 0,
+                transparent 140px,
+                black 200px
+            );
+            mask-image: radial-gradient(
+                circle at var(--x, 50%) var(--y, 50%),
+                transparent 0,
+                transparent 140px,
+                black 200px
+            );
+        }
+
+        #glassOverlay.active {
+            opacity: 1;
+        }
+
+        /* 移除聚光燈容器 - 不再需要 */
+
+        /* 主要 SVG */
+        #mainSvg {
+            display: block;
+            width: auto;
+            height: auto;
+        }
+
+        /* 點擊區域 */
+        .vendor-area {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .vendor-area:hover {
+            filter: brightness(1.1);
+            opacity: 0.8;
+        }
+
+        /* 控制按鈕 */
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: opacity 0.3s ease;
+        }
+
+        .controls.hide {
+            opacity: 0.3;
+        }
+
+        .btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            border: none;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            font-size: 24px;
+            cursor: pointer;
+            touch-action: manipulation;
+            color: #334155;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn:hover {
+            background: #fff;
+        }
+
+        /* 搜尋框 */
+        .search-box {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            transition: opacity 0.3s ease;
+        }
+
+        .search-box.hide {
+            opacity: 0.3;
+        }
+
+        .search-input {
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-size: 14px;
+            width: 200px;
+            outline: none;
+        }
+
+        .search-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #3b82f6;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .search-btn:hover {
+            background: #2563eb;
+        }
+
+        /* Info Window - 平滑動畫 */
+        #infoWindow {
+            position: fixed;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 380px;
+            min-width: 300px;
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(20px) scale(0.9);
+            visibility: hidden;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(20px);
+        }
+
+        #infoWindow.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            visibility: visible;
+        }
+
+        #infoWindow h3 {
+            margin: 0 0 18px 0;
+            color: #1e293b;
+            font-size: 22px;
+            font-weight: 700;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+        }
+
+        #infoWindow .info-row {
+            margin: 10px 0;
+            display: flex;
+            align-items: flex-start;
+            opacity: 0;
+            transform: translateX(-10px);
+            animation: slideIn 0.4s forwards;
+        }
+
+        #infoWindow.show .info-row:nth-child(1) { animation-delay: 0.1s; }
+        #infoWindow.show .info-row:nth-child(2) { animation-delay: 0.2s; }
+        #infoWindow.show .info-row:nth-child(3) { animation-delay: 0.3s; }
+        #infoWindow.show .info-row:nth-child(4) { animation-delay: 0.4s; }
+        #infoWindow.show .info-row:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        #infoWindow .info-label {
+            font-weight: 600;
+            color: #475569;
+            min-width: 85px;
+            margin-right: 12px;
+        }
+
+        #infoWindow .info-value {
+            color: #64748b;
+            flex: 1;
+        }
+
+        #infoWindow .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f1f5f9;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+
+        #infoWindow .close-btn:hover {
+            background: #e2e8f0;
+            color: #334155;
+            transform: rotate(90deg);
+        }
+
+        /* 資訊顯示 */
+        .info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.95);
+            color: #334155;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            z-index: 900;
+            transition: opacity 0.3s ease;
+        }
+
+        .info.hide {
+            opacity: 0.3;
+        }
+
+        .zoom-level {
+            color: #4ade80;
+            font-weight: bold;
+        }
+
+        /* 載入畫面 */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #475569;
+            font-size: 18px;
+            z-index: 2000;
+            text-align: center;
+        }
+
+        /* 退出聚焦按鈕 */
+        #exitFocus {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 14px 24px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 2100;
+            opacity: 0;
+            transform: translateY(20px);
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        #exitFocus.show {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        #exitFocus:hover {
+            background: rgba(220, 38, 38, 0.95);
+            transform: scale(1.05);
+        }
+
+        /* 圖層提示 */
+        .layer-notice {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+            z-index: 1100;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .layer-notice.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- SVG 容器 -->
+        <div id="svgContainer"></div>
+
+        <!-- 毛玻璃遮罩 -->
+        <div id="glassOverlay"></div>
+
+
+        <!-- 載入提示 -->
+        <div class="loading" id="loading">載入地圖中...</div>
+
+        <!-- 圖層切換提示 -->
+        <div class="layer-notice" id="layerNotice"></div>
+
+        <!-- 搜尋框 -->
+        <div class="search-box" id="searchBox">
+            <input type="text" class="search-input" id="searchInput" placeholder="搜尋廠商...">
+            <button class="search-btn" onclick="searchVendor()">搜尋</button>
+        </div>
+
+        <!-- 控制按鈕 -->
+        <div class="controls" id="controls">
+            <button class="btn" id="zoomIn" title="放大">+</button>
+            <button class="btn" id="zoomOut" title="縮小">−</button>
+            <button class="btn" id="reset" title="重置">⟲</button>
+            <button class="btn" id="reload" title="重新載入">🔄</button>
+        </div>
+
+        <!-- 資訊顯示 -->
+        <div class="info" id="infoPanel">
+            縮放: <span class="zoom-level" id="zoomLevel">33%</span><br>
+            <span id="layerInfo">基礎圖層</span><br>
+            <span id="vendorCount">載入廠商資料中...</span>
+        </div>
+
+        <!-- Info Window -->
+        <div id="infoWindow">
+            <button class="close-btn" onclick="closeInfoWindow()">✕</button>
+            <h3 id="infoTitle">廠商資訊</h3>
+            <div id="infoContent"></div>
+        </div>
+
+        <!-- 退出聚焦按鈕 -->
+        <button id="exitFocus" onclick="exitFocusMode()">退出聚焦模式 (ESC)</button>
+    </div>
+
+    <script>
+        // 全域變數
+        let svgContainer;
+        let mainSvg;
+        let scale = 0.33;
+        let translateX = 0;
+        let translateY = 0;
+        let isDragging = false;
+        let lastX = 0;
+        let lastY = 0;
+        let touches = [];
+        let lastDistance = 0;
+
+        // 廠商資料
+        let vendorData = {};
+        let svgToVendor = {};
+        let currentHighlight = null;
+        let svgBasicContent = null;
+        let svgFullContent = null;
+        let focusMode = false;
+
+        // 載入廠商資料
+        async function loadVendorData() {
+            try {
+                const response = await fetch('vendor_mapping_excel.csv');
+                const text = await response.text();
+
+                const lines = text.split('\n');
+                const headers = lines[0].replace(/^\uFEFF/, '').split(',');
+
+                let vendorCount = 0;
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    const values = line.split(',');
+                    const vendorName = values[0];
+                    const svgId = values[1];
+                    const category = values[2] || '';
+                    const products = values[3] || '';
+                    const phone = values[4] || '';
+                    const address = values[5] || '';
+
+                    if (!vendorData[vendorName]) {
+                        vendorData[vendorName] = {
+                            name: vendorName,
+                            svgIds: [],
+                            category: category,
+                            products: products,
+                            phone: phone,
+                            address: address
+                        };
+                        vendorCount++;
+                    }
+
+                    vendorData[vendorName].svgIds.push(svgId);
+                    svgToVendor[svgId] = vendorName;
+                }
+
+                console.log(`載入 ${vendorCount} 家廠商資料`);
+                document.getElementById('vendorCount').textContent = `已載入 ${vendorCount} 家廠商`;
+
+                return true;
+            } catch (error) {
+                console.error('載入廠商資料失敗:', error);
+                document.getElementById('vendorCount').textContent = '廠商資料載入失敗';
+                return false;
+            }
+        }
+
+        // 載入並處理 SVG
+        async function loadSVG() {
+            try {
+                const timestamp = new Date().getTime();
+                const response = await fetch(`svg (1223).svg?t=${timestamp}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const svgText = await response.text();
+
+                console.log('SVG載入成功，檔案大小:', svgText.length);
+                document.getElementById('loading').textContent = '處理SVG中...';
+
+                const g1Match = svgText.match(/<g[^>]*id="g1"[^>]*>/);
+                if (g1Match) {
+                    svgBasicContent = svgText.replace(
+                        /<g[^>]*id="g1"[^>]*>[\s\S]*?<\/g>/,
+                        '<g id="g1"></g>'
+                    );
+                    svgFullContent = svgText;
+                } else {
+                    svgBasicContent = svgText;
+                    svgFullContent = svgText;
+                }
+
+                await displaySVG(svgBasicContent);
+
+                document.getElementById('loading').style.display = 'none';
+                updateUI();
+
+            } catch (error) {
+                console.error('載入SVG失敗:', error);
+                document.getElementById('loading').textContent = '載入失敗: ' + error.message;
+            }
+        }
+
+        // 顯示 SVG 並添加互動
+        async function displaySVG(svgContent) {
+            svgContainer = document.getElementById('svgContainer');
+
+            svgContainer.innerHTML = '';
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = svgContent;
+            const svgElement = tempDiv.querySelector('svg');
+
+            if (!svgElement) {
+                throw new Error('無效的 SVG 內容');
+            }
+
+            svgElement.id = 'mainSvg';
+            svgElement.style.display = 'block';
+
+            // 為每個已知的 SVG ID 添加事件監聽
+            Object.keys(svgToVendor).forEach(svgId => {
+                const element = svgElement.querySelector(`#${svgId}`);
+                if (element) {
+                    element.classList.add('vendor-area');
+                    element.style.cursor = 'pointer';
+
+                    element.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const vendorName = svgToVendor[svgId];
+                        if (vendorName) {
+                            handleVendorClick(vendorName, e);
+                        }
+                    });
+
+                    element.addEventListener('touchstart', (e) => {
+                        e.stopPropagation();
+                        const vendorName = svgToVendor[svgId];
+                        if (vendorName) {
+                            handleVendorClick(vendorName, e);
+                        }
+                    }, {passive: true});
+                }
+            });
+
+            svgContainer.appendChild(svgElement);
+            mainSvg = svgElement;
+            updateTransform();
+        }
+
+        // 處理廠商點擊
+        function handleVendorClick(vendorName, event) {
+            console.log('點擊廠商:', vendorName);
+
+            const clientX = event.clientX || (event.touches && event.touches[0].clientX);
+            const clientY = event.clientY || (event.touches && event.touches[0].clientY);
+
+            enterFocusMode(vendorName, clientX, clientY);
+
+            // 延遲顯示 Info Window，讓動畫更流暢
+            setTimeout(() => {
+                showInfoWindow(vendorName, clientX + 20, clientY + 20);
+            }, 300);
+        }
+
+        // 進入聚焦模式
+        function enterFocusMode(vendorName, clickX, clickY) {
+            const vendor = vendorData[vendorName];
+            if (!vendor) return;
+
+            focusMode = true;
+            currentHighlight = vendorName;
+
+            // 1. 設置毛玻璃光圈位置
+            const glassOverlay = document.getElementById('glassOverlay');
+            glassOverlay.style.setProperty('--x', (clickX / window.innerWidth * 100) + '%');
+            glassOverlay.style.setProperty('--y', (clickY / window.innerHeight * 100) + '%');
+            glassOverlay.classList.add('active');
+
+            // 2. 隱藏其他UI元素
+            document.getElementById('searchBox').classList.add('hide');
+            document.getElementById('controls').classList.add('hide');
+            document.getElementById('infoPanel').classList.add('hide');
+
+            // 3. 高亮選中的元素（原地高亮，不放大）
+            vendor.svgIds.forEach(svgId => {
+                const element = mainSvg.querySelector(`#${svgId}`);
+                if (element) {
+                    element.style.fill = '#3b82f6';
+                    element.style.stroke = '#ffffff';
+                    element.style.strokeWidth = '2px';
+                    element.style.filter = 'brightness(1.2)';
+                }
+            });
+
+            // 4. 顯示退出按鈕
+            document.getElementById('exitFocus').classList.add('show');
+        }
+
+        // 退出聚焦模式
+        function exitFocusMode() {
+            if (!focusMode) return;
+
+            focusMode = false;
+
+            // 移除高亮效果
+            if (currentHighlight && vendorData[currentHighlight]) {
+                vendorData[currentHighlight].svgIds.forEach(svgId => {
+                    const element = mainSvg.querySelector(`#${svgId}`);
+                    if (element) {
+                        element.style.fill = '';
+                        element.style.stroke = '';
+                        element.style.strokeWidth = '';
+                        element.style.filter = '';
+                    }
+                });
+            }
+
+            currentHighlight = null;
+
+            // 移除所有效果
+            document.getElementById('glassOverlay').classList.remove('active');
+            document.getElementById('searchBox').classList.remove('hide');
+            document.getElementById('controls').classList.remove('hide');
+            document.getElementById('infoPanel').classList.remove('hide');
+            document.getElementById('exitFocus').classList.remove('show');
+
+            // 關閉 Info Window（只關閉視窗，不再調用 closeInfoWindow 避免循環）
+            const infoWindow = document.getElementById('infoWindow');
+            if (infoWindow.classList.contains('show')) {
+                infoWindow.classList.remove('show');
+            }
+        }
+
+        // 搜尋廠商
+        function searchVendor() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            if (!searchTerm) return;
+
+            const vendor = Object.keys(vendorData).find(name =>
+                name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            if (vendor) {
+                const firstSvgId = vendorData[vendor].svgIds[0];
+                const element = mainSvg.querySelector(`#${firstSvgId}`);
+                if (element) {
+                    const rect = element.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+
+                    enterFocusMode(vendor, centerX, centerY);
+
+                    setTimeout(() => {
+                        showInfoWindow(vendor, centerX + 20, centerY + 20);
+                    }, 300);
+                }
+
+                if (scale < 1) {
+                    scale = 1;
+                    updateTransform();
+                    updateUI();
+                }
+            } else {
+                alert('找不到符合的廠商');
+            }
+
+            document.getElementById('searchInput').value = '';
+        }
+
+        // 顯示 Info Window（平滑出現）
+        function showInfoWindow(vendorName, x, y) {
+            const vendor = vendorData[vendorName];
+            if (!vendor) return;
+
+            const infoWindow = document.getElementById('infoWindow');
+            const title = document.getElementById('infoTitle');
+            const content = document.getElementById('infoContent');
+
+            title.textContent = vendor.name;
+
+            content.innerHTML = `
+                ${vendor.category ? `<div class="info-row">
+                    <span class="info-label">產業類別:</span>
+                    <span class="info-value">${vendor.category}</span>
+                </div>` : ''}
+                ${vendor.products ? `<div class="info-row">
+                    <span class="info-label">主要產品:</span>
+                    <span class="info-value">${vendor.products}</span>
+                </div>` : ''}
+                ${vendor.phone ? `<div class="info-row">
+                    <span class="info-label">聯絡電話:</span>
+                    <span class="info-value">${vendor.phone}</span>
+                </div>` : ''}
+                ${vendor.address ? `<div class="info-row">
+                    <span class="info-label">地址:</span>
+                    <span class="info-value">${vendor.address}</span>
+                </div>` : ''}
+                <div class="info-row">
+                    <span class="info-label">元素數量:</span>
+                    <span class="info-value">${vendor.svgIds.length} 個</span>
+                </div>
+            `;
+
+            const maxX = window.innerWidth - 420;
+            const maxY = window.innerHeight - 300;
+            infoWindow.style.left = Math.min(x, maxX) + 'px';
+            infoWindow.style.top = Math.min(y, maxY) + 'px';
+
+            // 觸發平滑動畫
+            setTimeout(() => {
+                infoWindow.classList.add('show');
+            }, 10);
+        }
+
+        // 關閉 Info Window
+        function closeInfoWindow() {
+            const infoWindow = document.getElementById('infoWindow');
+            infoWindow.classList.remove('show');
+
+            // 同時退出聚焦模式
+            if (focusMode) {
+                exitFocusMode();
+            }
+        }
+
+        // 更新變換
+        function updateTransform() {
+            if (!svgContainer) return;
+
+            const transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            svgContainer.style.transform = transform;
+        }
+
+        // 初始化事件處理
+        function initEventHandlers() {
+            const container = document.getElementById('svgContainer');
+
+            const preventDefaults = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            };
+
+            document.addEventListener('gesturestart', preventDefaults, false);
+            document.addEventListener('gesturechange', preventDefaults, false);
+            document.addEventListener('gestureend', preventDefaults, false);
+
+            // 點擊背景退出聚焦
+            container.addEventListener('click', (e) => {
+                if (focusMode && !e.target.closest('.vendor-area')) {
+                    exitFocusMode();
+                }
+            });
+
+            // 觸控事件
+            container.addEventListener('touchstart', handleTouchStart, {passive: false});
+            container.addEventListener('touchmove', handleTouchMove, {passive: false});
+            container.addEventListener('touchend', handleTouchEnd, {passive: false});
+
+            // 滑鼠事件
+            container.addEventListener('mousedown', handleMouseDown);
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            container.addEventListener('wheel', handleWheel, {passive: false});
+
+            // 按鈕事件
+            document.getElementById('zoomIn').addEventListener('click', () => {
+                scale = Math.min(5, scale * 1.2);
+                checkLayerSwitch();
+                updateTransform();
+                updateUI();
+            });
+
+            document.getElementById('zoomOut').addEventListener('click', () => {
+                scale = Math.max(0.2, scale / 1.2);
+                checkLayerSwitch();
+                updateTransform();
+                updateUI();
+            });
+
+            document.getElementById('reset').addEventListener('click', () => {
+                scale = 0.33;
+                translateX = 0;
+                translateY = 0;
+                exitFocusMode();
+                checkLayerSwitch();
+                updateTransform();
+                updateUI();
+            });
+
+            document.getElementById('reload').addEventListener('click', async () => {
+                location.reload();
+            });
+
+            // Enter 鍵搜尋
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchVendor();
+                }
+            });
+
+            // ESC 退出聚焦
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && focusMode) {
+                    exitFocusMode();
+                }
+            });
+        }
+
+        // 檢查並切換圖層
+        async function checkLayerSwitch() {
+            const shouldShowFull = scale >= 0.45;
+            const currentlyShowingFull = mainSvg && mainSvg.querySelector('#g1').innerHTML !== '';
+
+            if (shouldShowFull !== currentlyShowingFull) {
+                const content = shouldShowFull ? svgFullContent : svgBasicContent;
+                await displaySVG(content);
+
+                const notice = document.getElementById('layerNotice');
+                notice.textContent = shouldShowFull ? '已切換至完整圖層' : '已切換至基礎圖層';
+                notice.classList.add('show');
+                setTimeout(() => {
+                    notice.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        // 觸控處理
+        function handleTouchStart(e) {
+            e.preventDefault();
+            touches = Array.from(e.touches);
+
+            if (touches.length === 1) {
+                isDragging = true;
+                lastX = touches[0].clientX;
+                lastY = touches[0].clientY;
+                svgContainer.classList.add('grabbing');
+            } else if (touches.length === 2) {
+                isDragging = false;
+                const dx = touches[1].clientX - touches[0].clientX;
+                const dy = touches[1].clientY - touches[0].clientY;
+                lastDistance = Math.hypot(dx, dy);
+            }
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            touches = Array.from(e.touches);
+
+            if (touches.length === 1 && isDragging) {
+                const dx = touches[0].clientX - lastX;
+                const dy = touches[0].clientY - lastY;
+
+                translateX += dx;
+                translateY += dy;
+
+                lastX = touches[0].clientX;
+                lastY = touches[0].clientY;
+
+                updateTransform();
+            } else if (touches.length === 2) {
+                const dx = touches[1].clientX - touches[0].clientX;
+                const dy = touches[1].clientY - touches[0].clientY;
+                const distance = Math.hypot(dx, dy);
+
+                if (lastDistance > 0) {
+                    const scaleFactor = distance / lastDistance;
+                    scale = Math.max(0.2, Math.min(5, scale * scaleFactor));
+                    checkLayerSwitch();
+                    updateTransform();
+                    updateUI();
+                }
+
+                lastDistance = distance;
+            }
+        }
+
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            touches = Array.from(e.touches);
+
+            if (touches.length === 0) {
+                isDragging = false;
+                svgContainer.classList.remove('grabbing');
+                lastDistance = 0;
+            }
+        }
+
+        // 滑鼠處理
+        function handleMouseDown(e) {
+            if (e.target.closest('.vendor-area')) return;
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            svgContainer.classList.add('grabbing');
+        }
+
+        function handleMouseMove(e) {
+            if (!isDragging) return;
+
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+
+            translateX += dx;
+            translateY += dy;
+
+            lastX = e.clientX;
+            lastY = e.clientY;
+
+            updateTransform();
+        }
+
+        function handleMouseUp() {
+            isDragging = false;
+            svgContainer.classList.remove('grabbing');
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            const newScale = Math.max(0.2, Math.min(5, scale * delta));
+
+            const rect = svgContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left - translateX;
+            const y = e.clientY - rect.top - translateY;
+
+            translateX -= x * (newScale / scale - 1);
+            translateY -= y * (newScale / scale - 1);
+
+            scale = newScale;
+            checkLayerSwitch();
+            updateTransform();
+            updateUI();
+        }
+
+        // 更新UI
+        function updateUI() {
+            const zoomPercent = Math.round(scale * 100);
+            document.getElementById('zoomLevel').textContent = zoomPercent + '%';
+
+            const layerInfo = document.getElementById('layerInfo');
+            if (scale >= 0.45) {
+                layerInfo.textContent = '全部圖層';
+                layerInfo.style.color = '#4ade80';
+            } else {
+                layerInfo.textContent = '基礎圖層';
+                layerInfo.style.color = '#94a3b8';
+            }
+        }
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', async () => {
+            initEventHandlers();
+            await loadVendorData();
+            await loadSVG();
+            updateUI();
+        });
+    </script>
+</body>
+</html>
