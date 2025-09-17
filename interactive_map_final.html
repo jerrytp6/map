@@ -786,9 +786,15 @@
         // 創建廠商隱形按鈕覆蓋層
         function createVendorButtons() {
             // 清除現有按鈕
-            Object.values(vendorButtons).forEach(button => {
-                if (button.parentNode) {
-                    button.parentNode.removeChild(button);
+            Object.values(vendorButtons).forEach(buttonGroup => {
+                if (buttonGroup.button && buttonGroup.button.parentNode) {
+                    buttonGroup.button.parentNode.removeChild(buttonGroup.button);
+                }
+                if (buttonGroup.hoverRect && buttonGroup.hoverRect.parentNode) {
+                    buttonGroup.hoverRect.parentNode.removeChild(buttonGroup.hoverRect);
+                }
+                if (buttonGroup.textGroup && buttonGroup.textGroup.parentNode) {
+                    buttonGroup.textGroup.parentNode.removeChild(buttonGroup.textGroup);
                 }
             });
             vendorButtons = {};
@@ -852,6 +858,9 @@
                 textGroup.style.opacity = scale > 0.6 ? '1' : '0';
                 textGroup.style.transition = 'opacity 0.3s ease';
                 textGroup.style.pointerEvents = 'none';
+
+                // 添加唯一標識防止重複
+                textGroup.setAttribute('data-vendor', vendorName);
 
                 const textBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -944,7 +953,30 @@
 
         // 更新廠商標籤顯示
         function updateVendorLabels() {
+            if (!mainSvg) return;
+
+            // 清除所有現有的重複標籤
+            const existingLabels = mainSvg.querySelectorAll('.vendor-label');
+            const seenVendors = new Set();
+
+            existingLabels.forEach(label => {
+                const vendorName = label.getAttribute('data-vendor');
+                if (seenVendors.has(vendorName)) {
+                    // 重複的標籤，移除
+                    label.remove();
+                } else {
+                    seenVendors.add(vendorName);
+                    // 更新顯示狀態
+                    label.style.opacity = scale > 0.6 ? '1' : '0';
+                }
+            });
+
+            // 也更新 vendorButtons 中的標籤
             Object.values(vendorButtons).forEach(({textGroup}) => {
+                if (textGroup && !textGroup.parentNode) {
+                    // 如果 textGroup 不在 DOM 中，就重新添加
+                    mainSvg.appendChild(textGroup);
+                }
                 if (textGroup) {
                     textGroup.style.opacity = scale > 0.6 ? '1' : '0';
                 }
@@ -1336,6 +1368,20 @@
             const currentlyShowingFull = mainSvg && mainSvg.querySelector('#g1').innerHTML !== '';
 
             if (shouldShowFull !== currentlyShowingFull) {
+                // 在切換圖層之前先清除所有廠商按鈕
+                Object.values(vendorButtons).forEach(buttonGroup => {
+                    if (buttonGroup.button && buttonGroup.button.parentNode) {
+                        buttonGroup.button.parentNode.removeChild(buttonGroup.button);
+                    }
+                    if (buttonGroup.hoverRect && buttonGroup.hoverRect.parentNode) {
+                        buttonGroup.hoverRect.parentNode.removeChild(buttonGroup.hoverRect);
+                    }
+                    if (buttonGroup.textGroup && buttonGroup.textGroup.parentNode) {
+                        buttonGroup.textGroup.parentNode.removeChild(buttonGroup.textGroup);
+                    }
+                });
+                vendorButtons = {};
+
                 const content = shouldShowFull ? svgFullContent : svgBasicContent;
                 await displaySVG(content);
 
