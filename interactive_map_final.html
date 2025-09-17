@@ -147,6 +147,43 @@
             }
         }
 
+        /* 廠商按鈕樣式 */
+        .vendor-button {
+            transition: all 0.2s ease;
+        }
+
+        .vendor-button:hover {
+            opacity: 0.8;
+        }
+
+        /* 廠商標籤樣式 */
+        .vendor-label {
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .vendor-label text {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        /* hover 指示器 */
+        .vendor-hover-indicator {
+            pointer-events: none;
+        }
+
+        /* 手機版廠商按鈕優化 */
+        @media (max-width: 768px) {
+            .vendor-button {
+                /* 增加觸控區域 */
+                stroke-width: 8;
+            }
+
+            .vendor-label text {
+                font-size: 14px;
+            }
+        }
+
         /* 控制按鈕 */
         .controls {
             position: fixed;
@@ -580,6 +617,7 @@
         let tapStartY = 0;
         let hasMoved = false;
         let doubleTapTimer = null;
+        let vendorButtons = {};
 
         // 廠商資料
         let vendorData = {};
@@ -745,6 +783,174 @@
             }
         }
 
+        // 創建廠商隱形按鈕覆蓋層
+        function createVendorButtons() {
+            // 清除現有按鈕
+            Object.values(vendorButtons).forEach(button => {
+                if (button.parentNode) {
+                    button.parentNode.removeChild(button);
+                }
+            });
+            vendorButtons = {};
+
+            if (!mainSvg) return;
+
+            // 為每個廠商創建一個隱形按鈕
+            Object.keys(vendorData).forEach(vendorName => {
+                const vendor = vendorData[vendorName];
+                if (!vendor.svgIds.length) return;
+
+                // 計算所有SVG元素的邊界框
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                let hasValidElements = false;
+
+                vendor.svgIds.forEach(svgId => {
+                    const element = mainSvg.querySelector(`#${svgId}`);
+                    if (element) {
+                        const bbox = element.getBBox();
+                        minX = Math.min(minX, bbox.x);
+                        minY = Math.min(minY, bbox.y);
+                        maxX = Math.max(maxX, bbox.x + bbox.width);
+                        maxY = Math.max(maxY, bbox.y + bbox.height);
+                        hasValidElements = true;
+                    }
+                });
+
+                if (!hasValidElements) return;
+
+                // 創建隱形按鈕
+                const button = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                button.setAttribute('x', minX - 5);
+                button.setAttribute('y', minY - 5);
+                button.setAttribute('width', (maxX - minX) + 10);
+                button.setAttribute('height', (maxY - minY) + 10);
+                button.setAttribute('fill', 'transparent');
+                button.setAttribute('stroke', 'none');
+                button.setAttribute('cursor', 'pointer');
+                button.style.pointerEvents = 'all';
+                button.classList.add('vendor-button');
+                button.dataset.vendorName = vendorName;
+
+                // 添加hover效果的可見指示
+                const hoverRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                hoverRect.setAttribute('x', minX - 2);
+                hoverRect.setAttribute('y', minY - 2);
+                hoverRect.setAttribute('width', (maxX - minX) + 4);
+                hoverRect.setAttribute('height', (maxY - minY) + 4);
+                hoverRect.setAttribute('fill', 'rgba(59, 130, 246, 0.1)');
+                hoverRect.setAttribute('stroke', '#3b82f6');
+                hoverRect.setAttribute('stroke-width', '2');
+                hoverRect.setAttribute('rx', '4');
+                hoverRect.style.opacity = '0';
+                hoverRect.style.transition = 'opacity 0.2s ease';
+                hoverRect.style.pointerEvents = 'none';
+                hoverRect.classList.add('vendor-hover-indicator');
+
+                // 創建文字標籤（只在較大縮放時顯示）
+                const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                textGroup.classList.add('vendor-label');
+                textGroup.style.opacity = scale > 0.6 ? '1' : '0';
+                textGroup.style.transition = 'opacity 0.3s ease';
+                textGroup.style.pointerEvents = 'none';
+
+                const textBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+
+                text.textContent = vendorName;
+                text.setAttribute('x', (minX + maxX) / 2);
+                text.setAttribute('y', minY - 8);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', '12');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('fill', '#1e293b');
+
+                const textBBox = text.getBBox ? text.getBBox() : {x: 0, y: 0, width: vendorName.length * 8, height: 14};
+                textBg.setAttribute('x', textBBox.x - 4);
+                textBg.setAttribute('y', textBBox.y - 2);
+                textBg.setAttribute('width', textBBox.width + 8);
+                textBg.setAttribute('height', textBBox.height + 4);
+                textBg.setAttribute('fill', 'rgba(255, 255, 255, 0.9)');
+                textBg.setAttribute('stroke', '#cbd5e1');
+                textBg.setAttribute('stroke-width', '1');
+                textBg.setAttribute('rx', '3');
+
+                textGroup.appendChild(textBg);
+                textGroup.appendChild(text);
+
+                // 事件處理
+                let tapStartTime, tapStartX, tapStartY, hasMoved;
+
+                button.addEventListener('mouseenter', () => {
+                    hoverRect.style.opacity = '1';
+                });
+
+                button.addEventListener('mouseleave', () => {
+                    hoverRect.style.opacity = '0';
+                });
+
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleVendorClick(vendorName, e);
+                });
+
+                button.addEventListener('touchstart', (e) => {
+                    e.stopPropagation();
+                    tapStartTime = Date.now();
+                    tapStartX = e.touches[0].clientX;
+                    tapStartY = e.touches[0].clientY;
+                    hasMoved = false;
+                    hoverRect.style.opacity = '1';
+                }, {passive: false});
+
+                button.addEventListener('touchmove', (e) => {
+                    const moveX = e.touches[0].clientX;
+                    const moveY = e.touches[0].clientY;
+                    const distance = Math.hypot(moveX - tapStartX, moveY - tapStartY);
+                    if (distance > 10) {
+                        hasMoved = true;
+                        hoverRect.style.opacity = '0';
+                    }
+                }, {passive: false});
+
+                button.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    hoverRect.style.opacity = '0';
+
+                    const endTime = Date.now();
+                    const tapDuration = endTime - tapStartTime;
+
+                    if (!hasMoved && tapDuration < 500) {
+                        handleVendorClick(vendorName, {
+                            clientX: tapStartX,
+                            clientY: tapStartY
+                        });
+                    }
+                }, {passive: false});
+
+                // 添加到SVG
+                mainSvg.appendChild(hoverRect);
+                mainSvg.appendChild(button);
+                mainSvg.appendChild(textGroup);
+
+                vendorButtons[vendorName] = {
+                    button: button,
+                    hoverRect: hoverRect,
+                    textGroup: textGroup
+                };
+            });
+        }
+
+        // 更新廠商標籤顯示
+        function updateVendorLabels() {
+            Object.values(vendorButtons).forEach(({textGroup}) => {
+                if (textGroup) {
+                    textGroup.style.opacity = scale > 0.6 ? '1' : '0';
+                }
+            });
+        }
+
         // 顯示 SVG 並添加互動
         async function displaySVG(svgContent) {
             svgContainer = document.getElementById('svgContainer');
@@ -762,85 +968,23 @@
             svgElement.id = 'mainSvg';
             svgElement.style.display = 'block';
 
-            // 為每個已知的 SVG ID 添加事件監聽
+            // 為原始SVG元素添加樣式但不添加事件（由隱形按鈕處理）
             Object.keys(svgToVendor).forEach(svgId => {
                 const element = svgElement.querySelector(`#${svgId}`);
                 if (element) {
                     element.classList.add('vendor-area');
-                    element.style.cursor = 'pointer';
-
-                    element.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const vendorName = svgToVendor[svgId];
-                        if (vendorName) {
-                            handleVendorClick(vendorName, e);
-                        }
-                    });
-
-                    element.addEventListener('touchstart', (e) => {
-                        e.stopPropagation();
-                        tapStartTime = Date.now();
-                        tapStartX = e.touches[0].clientX;
-                        tapStartY = e.touches[0].clientY;
-                        hasMoved = false;
-
-                        // 觸覺反饋 - 輕微縮放動畫
-                        element.style.transform = 'scale(0.98)';
-                        element.style.transition = 'transform 0.1s ease';
-                    }, {passive: false});
-
-                    element.addEventListener('touchmove', (e) => {
-                        const moveX = e.touches[0].clientX;
-                        const moveY = e.touches[0].clientY;
-                        const distance = Math.hypot(moveX - tapStartX, moveY - tapStartY);
-
-                        if (distance > 10) {
-                            hasMoved = true;
-                            // 恢復原始大小
-                            element.style.transform = '';
-                        }
-                    }, {passive: false});
-
-                    element.addEventListener('touchend', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-
-                        const endTime = Date.now();
-                        const tapDuration = endTime - tapStartTime;
-
-                        // 恢復原始大小
-                        element.style.transform = '';
-                        setTimeout(() => {
-                            element.style.transition = '';
-                        }, 100);
-
-                        // 檢查是否為有效點擊
-                        if (!hasMoved && tapDuration < 500) {
-                            const vendorName = svgToVendor[svgId];
-                            if (vendorName) {
-                                // 防止雙重觸發
-                                if (doubleTapTimer) {
-                                    clearTimeout(doubleTapTimer);
-                                    doubleTapTimer = null;
-                                    return;
-                                }
-
-                                doubleTapTimer = setTimeout(() => {
-                                    doubleTapTimer = null;
-                                    handleVendorClick(vendorName, {
-                                        clientX: tapStartX,
-                                        clientY: tapStartY
-                                    });
-                                }, 100);
-                            }
-                        }
-                    }, {passive: false});
+                    element.style.pointerEvents = 'none'; // 禁用原始元素的點擊
                 }
             });
 
             svgContainer.appendChild(svgElement);
             mainSvg = svgElement;
-            updateTransform();
+
+            // 創建廠商按鈕覆蓋層
+            setTimeout(() => {
+                createVendorButtons();
+                updateTransform();
+            }, 100);
         }
 
         // 處理廠商點擊
@@ -1019,12 +1163,39 @@
             }
         }
 
+        // 以螢幕中心為基準縮放
+        function zoomAtScreenCenter(scaleFactor) {
+            const newScale = Math.max(0.1, Math.min(8, scale * scaleFactor));
+
+            if (newScale === scale) return;
+
+            // 螢幕中心就是(0, 0)，因為我們的容器已經置中了
+            const screenCenterX = 0;
+            const screenCenterY = 0;
+
+            // 計算縮放調整
+            const scaleChange = newScale / scale;
+            const adjustX = (screenCenterX - translateX) * (scaleChange - 1);
+            const adjustY = (screenCenterY - translateY) * (scaleChange - 1);
+
+            translateX -= adjustX;
+            translateY -= adjustY;
+            scale = newScale;
+
+            checkLayerSwitch();
+            updateTransform();
+            updateUI();
+        }
+
         // 更新變換
         function updateTransform() {
             if (!svgContainer) return;
 
             const transform = `translate(-50%, -50%) translate(${translateX}px, ${translateY}px) scale(${scale})`;
             svgContainer.style.transform = transform;
+
+            // 更新廠商標籤顯示
+            updateVendorLabels();
         }
 
         // 初始化事件處理
@@ -1066,6 +1237,21 @@
             document.addEventListener('gesturechange', (e) => e.preventDefault());
             document.addEventListener('gestureend', (e) => e.preventDefault());
 
+            // 中鍵點擊重置縮放
+            container.addEventListener('mousedown', (e) => {
+                if (e.button === 1) { // 中鍵
+                    e.preventDefault();
+                    scale = initialScale;
+                    translateX = 0;
+                    translateY = 0;
+                    centerMapOnScreen();
+                    exitFocusMode();
+                    checkLayerSwitch();
+                    updateTransform();
+                    updateUI();
+                }
+            });
+
             // 滑鼠事件
             container.addEventListener('mousedown', handleMouseDown);
             document.addEventListener('mousemove', handleMouseMove);
@@ -1074,17 +1260,11 @@
 
             // 按鈕事件
             document.getElementById('zoomIn').addEventListener('click', () => {
-                scale = Math.min(5, scale * 1.2);
-                checkLayerSwitch();
-                updateTransform();
-                updateUI();
+                zoomAtScreenCenter(1.2);
             });
 
             document.getElementById('zoomOut').addEventListener('click', () => {
-                scale = Math.max(0.2, scale / 1.2);
-                checkLayerSwitch();
-                updateTransform();
-                updateUI();
+                zoomAtScreenCenter(1/1.2);
             });
 
             document.getElementById('reset').addEventListener('click', () => {
@@ -1165,6 +1345,9 @@
                 setTimeout(() => {
                     notice.classList.remove('show');
                 }, 2000);
+            } else {
+                // 即使沒有切換圖層，也要更新標籤顯示
+                updateVendorLabels();
             }
         }
 
@@ -1333,16 +1516,26 @@
             e.preventDefault();
 
             const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            const newScale = Math.max(0.2, Math.min(5, scale * delta));
+            const newScale = Math.max(0.1, Math.min(8, scale * delta));
 
+            // 以游標位置為中心縮放
             const rect = svgContainer.getBoundingClientRect();
-            const x = e.clientX - rect.left - translateX;
-            const y = e.clientY - rect.top - translateY;
+            const containerCenterX = rect.width / 2;
+            const containerCenterY = rect.height / 2;
 
-            translateX -= x * (newScale / scale - 1);
-            translateY -= y * (newScale / scale - 1);
+            // 游標相對於容器中心的偏移
+            const mouseX = e.clientX - rect.left - containerCenterX;
+            const mouseY = e.clientY - rect.top - containerCenterY;
 
+            // 計算縮放調整
+            const scaleChange = newScale / scale;
+            const adjustX = (mouseX - translateX) * (scaleChange - 1);
+            const adjustY = (mouseY - translateY) * (scaleChange - 1);
+
+            translateX -= adjustX;
+            translateY -= adjustY;
             scale = newScale;
+
             checkLayerSwitch();
             updateTransform();
             updateUI();
