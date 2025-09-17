@@ -568,15 +568,7 @@
         <div class="controls" id="controls">
             <button class="btn" id="zoomIn" title="放大">+</button>
             <button class="btn" id="zoomOut" title="縮小">−</button>
-            <button class="btn" id="reset" title="重置">⟲</button>
             <button class="btn" id="reload" title="重新載入">🔄</button>
-        </div>
-
-        <!-- 資訊顯示 -->
-        <div class="info" id="infoPanel">
-            縮放: <span class="zoom-level" id="zoomLevel">33%</span><br>
-            <span id="layerInfo">基礎圖層</span><br>
-            <span id="vendorCount">載入廠商資料中...</span>
         </div>
 
         <!-- Info Window -->
@@ -629,23 +621,8 @@
 
         // 根據螢幕大小計算初始縮放比例
         function getInitialScale() {
-            const screenWidth = window.innerWidth;
-            const screenHeight = window.innerHeight;
-            const isMobile = screenWidth <= 768;
-
-            if (isMobile) {
-                // 手機版：根據螢幕尺寸調整
-                if (screenWidth < 400) {
-                    return 0.25; // 小螢幕手機
-                } else if (screenWidth < 600) {
-                    return 0.3;  // 中等手機
-                } else {
-                    return 0.35; // 大螢幕手機或平板
-                }
-            } else {
-                // 桌面版
-                return 0.33;
-            }
+            // 統一設定為51%
+            return 0.51;
         }
 
         // 初始化地圖位置和縮放
@@ -661,7 +638,6 @@
                 setTimeout(() => {
                     centerMapOnScreen();
                     updateTransform();
-                    updateUI();
                 }, 100);
             }
         }
@@ -734,12 +710,10 @@
                 }
 
                 console.log(`載入 ${vendorCount} 家廠商資料`);
-                document.getElementById('vendorCount').textContent = `已載入 ${vendorCount} 家廠商`;
 
                 return true;
             } catch (error) {
                 console.error('載入廠商資料失敗:', error);
-                document.getElementById('vendorCount').textContent = '廠商資料載入失敗';
                 return false;
             }
         }
@@ -775,7 +749,7 @@
                 initializeMapPosition();
 
                 document.getElementById('loading').style.display = 'none';
-                updateUI();
+                ;
 
             } catch (error) {
                 console.error('載入SVG失敗:', error);
@@ -1063,7 +1037,7 @@
                 if (scale < 1) {
                     scale = 1;
                     updateTransform();
-                    updateUI();
+                    ;
                 }
             } else {
                 alert('找不到符合的廠商');
@@ -1149,7 +1123,7 @@
 
             checkLayerSwitch();
             updateTransform();
-            updateUI();
+            ;
         }
 
         // 更新變換
@@ -1210,7 +1184,7 @@
                     exitFocusMode();
                     checkLayerSwitch();
                     updateTransform();
-                    updateUI();
+                    ;
                 }
             });
 
@@ -1229,16 +1203,6 @@
                 zoomAtScreenCenter(1/1.2);
             });
 
-            document.getElementById('reset').addEventListener('click', () => {
-                scale = initialScale;
-                translateX = 0;
-                translateY = 0;
-                exitFocusMode();
-                centerMapOnScreen();
-                checkLayerSwitch();
-                updateTransform();
-                updateUI();
-            });
 
             document.getElementById('reload').addEventListener('click', async () => {
                 location.reload();
@@ -1270,7 +1234,7 @@
                         initialScale = newScale;
                         centerMapOnScreen();
                         updateTransform();
-                        updateUI();
+                        ;
                     } else {
                         // 只調整位置，保持縮放比例
                         applyBoundaryConstraints();
@@ -1287,7 +1251,7 @@
                     initialScale = newScale;
                     centerMapOnScreen();
                     updateTransform();
-                    updateUI();
+                    ;
                 }, 500); // 等待方向變更完成
             });
         }
@@ -1420,7 +1384,7 @@
 
                     checkLayerSwitch();
                     updateTransform();
-                    updateUI();
+                    ;
                 }
             }
         }
@@ -1508,7 +1472,7 @@
 
             checkLayerSwitch();
             updateTransform();
-            updateUI();
+            ;
         }
 
         // 慣性滾動
@@ -1588,20 +1552,7 @@
             }
         }
 
-        // 更新UI
-        function updateUI() {
-            const zoomPercent = Math.round(scale * 100);
-            document.getElementById('zoomLevel').textContent = zoomPercent + '%';
-
-            const layerInfo = document.getElementById('layerInfo');
-            if (scale >= 0.45) {
-                layerInfo.textContent = '全部圖層';
-                layerInfo.style.color = '#4ade80';
-            } else {
-                layerInfo.textContent = '基礎圖層';
-                layerInfo.style.color = '#94a3b8';
-            }
-        }
+        // updateUI 函數已移除 - 不再顯示縮放比例等資訊
 
         // 初始化
         window.addEventListener('DOMContentLoaded', async () => {
@@ -1617,7 +1568,7 @@
                 }
             }, 500);
 
-            updateUI();
+            ;
         });
     </script>
 </body>
