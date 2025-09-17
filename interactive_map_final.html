@@ -88,7 +88,7 @@
             /* 不再對整個容器模糊 */
         }
 
-        /* 毛玻璃遮罩層 - 中心區域透明 */
+        /* 毛玻璃遮罩層 - 中心區域完全透明 */
         #glassOverlay {
             position: fixed;
             top: 0;
@@ -98,28 +98,52 @@
             background: radial-gradient(
                 circle at var(--x, 50%) var(--y, 50%),
                 transparent 0,
-                transparent 150px,
-                rgba(15, 23, 42, 0.3) 200px,
-                rgba(15, 23, 42, 0.5) 350px,
-                rgba(15, 23, 42, 0.7) 100%
+                transparent var(--spotlight-size, 200px),
+                rgba(0, 0, 0, 0.35) calc(var(--spotlight-size, 200px) + 50px)
             );
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 100;
-            -webkit-mask-image: radial-gradient(
+        }
+
+        /* 手機版聚光燈調整 */
+        @media (max-width: 768px) {
+            #glassOverlay {
+                --spotlight-size: 150px;
+            }
+        }
+
+        /* 桌面版聚光燈 */
+        @media (min-width: 769px) {
+            #glassOverlay {
+                --spotlight-size: 220px;
+            }
+        }
+
+        /* 背景模糊效果 - 不影響聚光燈區域 */
+        #glassOverlay::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            -webkit-mask: radial-gradient(
                 circle at var(--x, 50%) var(--y, 50%),
                 transparent 0,
-                transparent 140px,
-                black 200px
+                transparent var(--spotlight-size, 200px),
+                black calc(var(--spotlight-size, 200px) + 30px)
             );
-            mask-image: radial-gradient(
+            mask: radial-gradient(
                 circle at var(--x, 50%) var(--y, 50%),
                 transparent 0,
-                transparent 140px,
-                black 200px
+                transparent var(--spotlight-size, 200px),
+                black calc(var(--spotlight-size, 200px) + 30px)
             );
         }
 
