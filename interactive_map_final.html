@@ -539,7 +539,7 @@
             }
         }
 
-        /* 展區列表對話框 */
+        /* 展區列表對話框 - 重新設計 */
         #exhibitionModal {
             position: fixed;
             top: 0;
@@ -563,41 +563,52 @@
         .modal-content {
             background: white;
             border-radius: 20px;
-            width: 90%;
-            max-width: 800px;
-            max-height: 85vh;
+            width: 95%;
+            max-width: 900px;
+            max-height: 90vh;
             overflow: hidden;
             box-shadow: 0 25px 60px rgba(0,0,0,0.25);
             transform: translateY(20px);
             transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         #exhibitionModal.show .modal-content {
             transform: translateY(0);
         }
 
+        /* 模態框頭部 */
         .modal-header {
-            padding: 24px;
+            padding: 20px 24px;
             border-bottom: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: #f8fafc;
+            flex-shrink: 0;
         }
 
         .modal-title {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             color: #1e293b;
         }
 
+        .modal-subtitle {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
         .modal-close {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border: none;
             background: transparent;
             cursor: pointer;
-            font-size: 24px;
+            font-size: 20px;
             color: #64748b;
             border-radius: 50%;
             transition: all 0.2s;
@@ -611,10 +622,87 @@
             color: #334155;
         }
 
+        /* 搜尋和篩選區 */
+        .filter-section {
+            padding: 16px 24px;
+            background: white;
+            border-bottom: 1px solid #f1f5f9;
+            flex-shrink: 0;
+        }
+
+        .filter-search {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .filter-search input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .filter-search input:focus {
+            border-color: #3b82f6;
+        }
+
+        .filter-search::before {
+            content: '🔍';
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        /* 統計資訊 */
+        .stats-bar {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .stat-number {
+            font-weight: 600;
+            color: #3b82f6;
+        }
+
+        /* 產業類別下拉選單 */
+        .category-filter {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .category-select {
+            flex: 1;
+            max-width: 200px;
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* 內容區域 */
         .modal-body {
-            padding: 24px;
+            flex: 1;
             overflow-y: auto;
-            max-height: calc(85vh - 140px);
+            padding: 0;
         }
 
         /* 產業類別標籤 */
@@ -648,63 +736,139 @@
             border-color: #3b82f6;
         }
 
-        /* 廠商卡片網格 */
-        .vendor-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 12px;
+        /* 廠商列表 - 重新設計為更緊湊的列表式 */
+        .vendor-list {
+            padding: 0;
         }
 
-        .vendor-card {
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
+        .vendor-item {
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            padding: 12px 24px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
 
-        .vendor-card:hover {
-            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-            transform: translateY(-1px);
-            border-color: #3b82f6;
+        .vendor-item:hover {
+            background-color: #f8fafc;
         }
 
-        .vendor-card:active {
-            transform: scale(0.98);
+        .vendor-item:last-child {
+            border-bottom: none;
         }
 
-        .vendor-card-title {
-            font-size: 15px;
+        .vendor-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .vendor-name {
+            font-size: 16px;
             font-weight: 600;
             color: #1e293b;
             margin-bottom: 4px;
-            line-height: 1.3;
         }
 
-        .vendor-card-info {
-            font-size: 12px;
+        .vendor-details {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 13px;
             color: #64748b;
-            line-height: 1.4;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            flex-grow: 1;
+            flex-wrap: wrap;
         }
 
-        .vendor-card-booth {
-            display: inline-block;
+        .vendor-category {
+            background: #fef3c7;
             padding: 2px 6px;
-            background: #f1f5f9;
             border-radius: 4px;
             font-size: 11px;
-            color: #475569;
-            margin-top: 6px;
-            font-weight: 600;
+            color: #92400e;
+            font-weight: 500;
+            order: 3;
+        }
+
+        .vendor-booth {
+            color: #3b82f6;
+            font-weight: 700;
+            font-size: 13px;
+            order: 1;
+            min-width: 60px;
+        }
+
+        .vendor-content {
+            color: #64748b;
+            font-size: 12px;
+            order: 2;
+            padding-left: 4px;
+            border-left: 1px solid #e2e8f0;
+            margin-left: 4px;
+        }
+
+        /* 產業類別標籤顏色 */
+        .vendor-category[data-category="大會"] {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .vendor-category[data-category="藥廠"] {
+            background: #fce7f3;
+            color: #9f1239;
+        }
+
+        .vendor-category[data-category="醫療儀器"] {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .vendor-category[data-category="展廳"] {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .vendor-category[data-category="論文"] {
+            background: #fef3c7;
+            color: #78350f;
+        }
+
+        .vendor-category[data-category="點心"] {
+            background: #fed7aa;
+            color: #7c2d12;
+        }
+
+        .vendor-category[data-category="洗手間"] {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .vendor-arrow {
+            color: #cbd5e1;
+            font-size: 18px;
+            margin-left: 12px;
+        }
+
+        /* 空狀態 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+            color: #64748b;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-subtext {
+            font-size: 14px;
+            opacity: 0.7;
         }
 
         /* 手機版優化 */
@@ -718,95 +882,59 @@
 
             .modal-header {
                 padding: 16px 20px;
-                position: sticky;
-                top: 0;
-                z-index: 10;
-                background: white;
             }
 
             .modal-title {
-                font-size: 20px;
+                font-size: 18px;
             }
 
-            .modal-body {
-                padding: 16px;
-                max-height: calc(100vh - 70px);
+            .filter-section {
+                padding: 12px 20px;
             }
 
-            .category-tabs {
-                gap: 8px;
-                margin-bottom: 16px;
-                overflow-x: auto;
-                flex-wrap: nowrap;
-                -webkit-overflow-scrolling: touch;
-                padding-bottom: 4px;
-            }
-
-            .category-tab {
-                padding: 6px 16px;
-                font-size: 13px;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-
-            /* 手機上使用兩列顯示 */
-            .vendor-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-            }
-
-            .vendor-card {
-                padding: 10px;
-                border-radius: 8px;
-            }
-
-            .vendor-card-title {
-                font-size: 14px;
-                margin-bottom: 3px;
-            }
-
-            .vendor-card-info {
-                font-size: 11px;
-                -webkit-line-clamp: 1;
-            }
-
-            .vendor-card-booth {
-                padding: 1px 5px;
-                font-size: 10px;
-                margin-top: 4px;
-            }
-        }
-
-        /* 小手機優化 (< 380px) */
-        @media (max-width: 380px) {
-            .vendor-grid {
-                grid-template-columns: 1fr;
+            .stats-bar {
+                flex-wrap: wrap;
                 gap: 8px;
             }
 
-            .vendor-card {
-                display: flex;
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-                padding: 12px;
+            .category-filter {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
             }
 
-            .vendor-card-content {
-                flex: 1;
+            .category-select {
+                max-width: none;
             }
 
-            .vendor-card-title {
+            .vendor-item {
+                padding: 12px 20px;
+            }
+
+            .vendor-name {
                 font-size: 15px;
+                margin-bottom: 6px;
             }
 
-            .vendor-card-info {
-                display: none;
+            .vendor-details {
+                gap: 6px;
             }
 
-            .vendor-card-booth {
-                margin-top: 2px;
-                display: inline-block;
+            .vendor-booth {
+                font-size: 12px;
+                min-width: auto;
+            }
+
+            .vendor-content {
+                font-size: 11px;
+                border-left: none;
+                padding-left: 0;
+                margin-left: 0;
+            }
+
+            .vendor-category {
+                font-size: 10px;
+                padding: 1px 4px;
             }
         }
 
@@ -1076,15 +1204,41 @@
         <div id="exhibitionModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 class="modal-title">展區列表</h2>
+                    <div>
+                        <h2 class="modal-title">展區列表</h2>
+                        <div class="modal-subtitle" id="modalSubtitle">載入中...</div>
+                    </div>
                     <button class="modal-close" onclick="closeExhibitionModal()">✕</button>
                 </div>
-                <div class="modal-body">
-                    <div class="category-tabs" id="categoryTabs">
-                        <!-- 動態生成的產業類別標籤 -->
+
+                <div class="filter-section">
+                    <div class="filter-search">
+                        <input type="text" id="modalSearchInput" placeholder="搜尋廠商名稱或攤位編號...">
                     </div>
-                    <div class="vendor-grid" id="vendorGrid">
-                        <!-- 動態生成的廠商卡片 -->
+
+                    <div class="stats-bar">
+                        <div class="stat-item">
+                            <span>總計</span>
+                            <span class="stat-number" id="totalCount">0</span>
+                            <span>家廠商</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>顯示</span>
+                            <span class="stat-number" id="displayCount">0</span>
+                            <span>筆結果</span>
+                        </div>
+                    </div>
+
+                    <div class="category-filter">
+                        <select class="category-select" id="categorySelect">
+                            <option value="">所有產業類別</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-body">
+                    <div class="vendor-list" id="vendorList">
+                        <!-- 動態生成的廠商列表 -->
                     </div>
                 </div>
             </div>
@@ -1128,6 +1282,7 @@
         let svgBasicContent = null;
         let svgFullContent = null;
         let focusMode = false;
+        let isSearchTriggered = false;
 
         // 根據螢幕大小計算初始縮放比例
         function getInitialScale() {
@@ -1150,6 +1305,83 @@
                     updateTransform();
                 }, 100);
             }
+        }
+
+        // 搜尋觸發關閉後的智能定位
+        function resetMapToInitialSize() {
+            if (!currentHighlight) return;
+
+            // 計算聚光燈區域的邊界
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+            currentHighlight.forEach(elementId => {
+                const element = mainSvg.querySelector(`#${elementId}`);
+                if (element) {
+                    const bbox = element.getBBox();
+                    minX = Math.min(minX, bbox.x);
+                    minY = Math.min(minY, bbox.y);
+                    maxX = Math.max(maxX, bbox.x + bbox.width);
+                    maxY = Math.max(maxY, bbox.y + bbox.height);
+                }
+            });
+
+            if (minX === Infinity) return;
+
+            // 計算聚光燈區域中心和尺寸
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            const width = maxX - minX;
+            const height = maxY - minY;
+
+            // 根據設備和聚光燈大小決定縮放策略
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+            const isMobile = containerWidth <= 768;
+
+            let targetScale;
+            if (isMobile) {
+                // 手機：確保聚光燈區域占螢幕適當比例（約40-60%）
+                const scaleByWidth = (containerWidth * 0.5) / width;
+                const scaleByHeight = (containerHeight * 0.5) / height;
+                targetScale = Math.min(scaleByWidth, scaleByHeight);
+                // 限制縮放範圍
+                targetScale = Math.max(0.3, Math.min(1.5, targetScale));
+            } else {
+                // 桌面：使用較小的縮放比例讓用戶看到更多上下文
+                targetScale = getInitialScale() * 1.2;
+            }
+
+            // 計算目標位置：將聚光燈區域置中
+            const targetX = -centerX * targetScale + containerWidth / 2;
+            const targetY = -centerY * targetScale + containerHeight / 2;
+
+            // 平滑動畫到目標位置
+            const startScale = scale;
+            const startX = translateX;
+            const startY = translateY;
+
+            const duration = 800;
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // 使用緩動函數
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+                scale = startScale + (targetScale - startScale) * easeProgress;
+                translateX = startX + (targetX - startX) * easeProgress;
+                translateY = startY + (targetY - startY) * easeProgress;
+
+                updateTransform();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+
+            requestAnimationFrame(animate);
         }
 
         // 將地圖置中於螢幕
@@ -1198,26 +1430,33 @@
                     const values = line.split(',');
                     const vendorName = values[0];
                     const svgId = values[1];
-                    const category = values[2] || '';
-                    const products = values[3] || '';
-                    const phone = values[4] || '';
-                    const address = values[5] || '';
+                    const boothNumber = values[2] || '';  // 新增：攤位編號
+                    const category = values[3] || '';
+                    const content = values[4] || '';  // 改為內容（原products）
 
                     if (!vendorData[vendorName]) {
                         vendorData[vendorName] = {
                             name: vendorName,
                             svgIds: [],
+                            boothNumbers: new Set(),  // 使用Set避免重複
                             category: category,
-                            products: products,
-                            phone: phone,
-                            address: address
+                            content: content,
+                            products: content  // 保留products以相容舊代碼
                         };
                         vendorCount++;
                     }
 
                     vendorData[vendorName].svgIds.push(svgId);
+                    if (boothNumber) {
+                        vendorData[vendorName].boothNumbers.add(boothNumber);
+                    }
                     svgToVendor[svgId] = vendorName;
                 }
+
+                // 將Set轉換為Array以便使用
+                Object.values(vendorData).forEach(vendor => {
+                    vendor.boothNumbers = Array.from(vendor.boothNumbers);
+                });
 
                 console.log(`載入 ${vendorCount} 家廠商資料`);
 
@@ -1450,6 +1689,9 @@
         function handleVendorClick(vendorName, event) {
             console.log('點擊廠商:', vendorName);
 
+            // 設定為點擊觸發（非搜尋）
+            isSearchTriggered = false;
+
             const clientX = event.clientX || (event.touches && event.touches[0].clientX);
             const clientY = event.clientY || (event.touches && event.touches[0].clientY);
 
@@ -1559,7 +1801,7 @@
         }
 
         // 計算搜尋相關度分數
-        function calculateRelevanceScore(searchTerm, vendorName, svgIds) {
+        function calculateRelevanceScore(searchTerm, vendorName, svgIds, boothNumbers = []) {
             const searchLower = searchTerm.toLowerCase();
             const vendorLower = vendorName.toLowerCase();
             let maxScore = 0;
@@ -1573,7 +1815,17 @@
                 maxScore = Math.max(maxScore, 60); // 包含匹配
             }
 
-            // 2. 攤位編號匹配
+            // 2. 真實攤位編號匹配（優先級最高）
+            boothNumbers.forEach(boothNumber => {
+                const boothLower = boothNumber.toString().toLowerCase();
+                if (boothLower === searchLower) {
+                    maxScore = Math.max(maxScore, 100); // 攤位號完全匹配
+                } else if (boothLower.includes(searchLower)) {
+                    maxScore = Math.max(maxScore, 90); // 攤位號包含匹配
+                }
+            });
+
+            // 3. SVG ID匹配（用於技術查詢）
             svgIds.forEach(svgId => {
                 const svgIdLower = svgId.toLowerCase();
                 if (svgIdLower === searchLower) {
@@ -1589,7 +1841,7 @@
                 }
             });
 
-            // 3. 部分字符匹配（模糊匹配）
+            // 4. 部分字符匹配（模糊匹配）
             if (maxScore === 0) {
                 const similarity = calculateStringSimilarity(searchLower, vendorLower);
                 if (similarity > 0.3) { // 相似度閾值
@@ -1631,7 +1883,7 @@
 
             Object.keys(vendorData).forEach(vendorName => {
                 const vendor = vendorData[vendorName];
-                const score = calculateRelevanceScore(searchTerm, vendorName, vendor.svgIds);
+                const score = calculateRelevanceScore(searchTerm, vendorName, vendor.svgIds, vendor.boothNumbers);
 
                 if (score > 0) {
                     searchResults.push({
@@ -1698,12 +1950,12 @@
                 infoDiv.appendChild(nameDiv);
 
                 // 顯示攤位編號資訊
-                if (result.vendor && result.vendor.svgIds) {
+                if (result.vendor && result.vendor.boothNumbers && result.vendor.boothNumbers.length > 0) {
                     const infoText = document.createElement('div');
                     infoText.className = 'vendor-info';
-                    const svgCount = result.vendor.svgIds.length;
-                    const firstIds = result.vendor.svgIds.slice(0, 3).map(id => id.replace('svg_', '')).join(', ');
-                    infoText.textContent = `攤位: ${firstIds}${svgCount > 3 ? '...' : ''} (共${svgCount}個)`;
+                    const boothCount = result.vendor.boothNumbers.length;
+                    const boothText = result.vendor.boothNumbers.slice(0, 3).join(', ');
+                    infoText.textContent = `攤位: ${boothText}${boothCount > 3 ? '...' : ''}`;
                     infoDiv.appendChild(infoText);
                 }
 
@@ -1745,35 +1997,47 @@
             const vendor = vendorData[vendorName];
             if (!vendor) return;
 
-            // 計算所有相關元素的中心點
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            let hasValidElements = false;
+            // 設定為搜尋觸發
+            isSearchTriggered = true;
 
-            vendor.svgIds.forEach(svgId => {
-                const element = mainSvg.querySelector(`#${svgId}`);
-                if (element) {
-                    const bbox = element.getBBox();
-                    minX = Math.min(minX, bbox.x);
-                    minY = Math.min(minY, bbox.y);
-                    maxX = Math.max(maxX, bbox.x + bbox.width);
-                    maxY = Math.max(maxY, bbox.y + bbox.height);
-                    hasValidElements = true;
-                }
-            });
-
-            if (!hasValidElements) return;
-
-            // 計算廠商區域的中心點（SVG座標系）
-            const svgCenterX = (minX + maxX) / 2;
-            const svgCenterY = (minY + maxY) / 2;
-
-            // 確保有適當的縮放級別
-            if (scale < 1) {
-                scale = 1;
+            // 如果目前在聚焦模式，先退出以確保乾淨的起始狀態
+            if (focusMode) {
+                exitFocusMode();
             }
 
-            // 將地圖移動到讓目標廠商置中
-            centerMapOnVendor(svgCenterX, svgCenterY);
+            // 重置到初始狀態以確保一致的定位計算
+            scale = getInitialScale();
+            translateX = 0;
+            translateY = 0;
+            updateTransform();
+
+            // 短暫延遲讓重置完成後再進行定位
+            setTimeout(() => {
+                // 計算所有相關元素的中心點
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                let hasValidElements = false;
+
+                vendor.svgIds.forEach(svgId => {
+                    const element = mainSvg.querySelector(`#${svgId}`);
+                    if (element) {
+                        const bbox = element.getBBox();
+                        minX = Math.min(minX, bbox.x);
+                        minY = Math.min(minY, bbox.y);
+                        maxX = Math.max(maxX, bbox.x + bbox.width);
+                        maxY = Math.max(maxY, bbox.y + bbox.height);
+                        hasValidElements = true;
+                    }
+                });
+
+                if (!hasValidElements) return;
+
+                // 計算廠商區域的中心點（SVG座標系）
+                const svgCenterX = (minX + maxX) / 2;
+                const svgCenterY = (minY + maxY) / 2;
+
+                // 將地圖移動到讓目標廠商置中
+                centerMapOnVendor(svgCenterX, svgCenterY);
+            }, 100);
 
             // 計算螢幕座標用於顯示效果
             const firstSvgId = vendor.svgIds[0];
@@ -1800,20 +2064,80 @@
             }
         }
 
-        // 將地圖移動到指定的SVG座標置中
+        // 將地圖移動到指定的SVG座標置中（考慮Info Window空間）
         function centerMapOnVendor(svgX, svgY) {
             const containerWidth = window.innerWidth;
             const containerHeight = window.innerHeight;
+            const isMobile = containerWidth <= 768;
 
             // 獲取SVG的原始尺寸
             const svgRect = mainSvg.getBoundingClientRect();
             const svgWidth = mainSvg.viewBox.baseVal.width || svgRect.width;
             const svgHeight = mainSvg.viewBox.baseVal.height || svgRect.height;
 
+            // 判斷廠商在地圖的哪一側（以SVG座標判斷）
+            const svgCenterX = svgWidth / 2;
+            const isRightSide = svgX > svgCenterX;
+
+            // Info Window 尺寸估算
+            const infoWindowWidth = isMobile ? 280 : 380;
+            const infoWindowHeight = isMobile ? 250 : 300;
+
+            let targetScreenX, targetScreenY;
+
+            if (isMobile) {
+                // 手機版：特殊處理
+                if (isRightSide) {
+                    // 右側廠商：放在螢幕右側1/3處，Info Window在左側
+                    targetScreenX = containerWidth * 0.65;
+                    targetScreenY = containerHeight * 0.4; // 稍微偏上
+                } else {
+                    // 左側廠商：放在螢幕左側1/3處，Info Window在右側
+                    targetScreenX = containerWidth * 0.35;
+                    targetScreenY = containerHeight * 0.4; // 稍微偏上
+                }
+
+                // 確保Info Window不會超出螢幕
+                const vendorScreenX = targetScreenX;
+                const vendorScreenY = targetScreenY;
+
+                // 預測Info Window位置並調整
+                if (isRightSide) {
+                    // Info Window會在左側，確保有足夠空間
+                    const infoWindowLeft = vendorScreenX - infoWindowWidth - 30;
+                    if (infoWindowLeft < 10) {
+                        targetScreenX = containerWidth * 0.75; // 再往右調整
+                    }
+                } else {
+                    // Info Window會在右側，確保有足夠空間
+                    const infoWindowRight = vendorScreenX + infoWindowWidth + 30;
+                    if (infoWindowRight > containerWidth - 10) {
+                        targetScreenX = containerWidth * 0.25; // 再往左調整
+                    }
+                }
+
+                // 垂直方向也要確保Info Window不會超出
+                const infoWindowBottom = vendorScreenY + infoWindowHeight + 30;
+                if (infoWindowBottom > containerHeight - 10) {
+                    targetScreenY = containerHeight * 0.3; // 往上調整
+                }
+
+            } else {
+                // 桌面版：原有邏輯
+                const offsetRatio = 0.2;
+                targetScreenX = containerWidth / 2;
+                targetScreenY = containerHeight / 2;
+
+                if (isRightSide) {
+                    targetScreenX = containerWidth / 2 + (containerWidth * offsetRatio);
+                } else {
+                    targetScreenX = containerWidth / 2 - (containerWidth * offsetRatio);
+                }
+            }
+
             // 計算需要的位移量
-            // 目標是讓SVG座標(svgX, svgY)顯示在螢幕中心
-            translateX = -(svgX * scale - containerWidth / 2);
-            translateY = -(svgY * scale - containerHeight / 2);
+            translateX = -(svgX * scale - targetScreenX);
+            translateY = -(svgY * scale - targetScreenY);
 
             // 應用邊界限制
             applyBoundaryConstraints();
@@ -1839,7 +2163,7 @@
                 // 檢查是否有部分匹配
                 if (vendorName.toLowerCase().includes(searchLower.charAt(0)) ||
                     searchLower.includes(vendorName.toLowerCase().charAt(0))) {
-                    const score = calculateRelevanceScore(searchTerm, vendorName, vendor.svgIds);
+                    const score = calculateRelevanceScore(searchTerm, vendorName, vendor.svgIds, vendor.boothNumbers);
                     if (score > 20) {
                         suggestions.push({
                             name: vendorName,
@@ -1866,26 +2190,18 @@
             title.textContent = vendor.name;
 
             content.innerHTML = `
+                ${vendor.boothNumbers && vendor.boothNumbers.length > 0 ? `<div class="info-row">
+                    <span class="info-label">攤位編號:</span>
+                    <span class="info-value">${vendor.boothNumbers.join(', ')}</span>
+                </div>` : ''}
                 ${vendor.category ? `<div class="info-row">
                     <span class="info-label">產業類別:</span>
                     <span class="info-value">${vendor.category}</span>
                 </div>` : ''}
-                ${vendor.products ? `<div class="info-row">
-                    <span class="info-label">主要產品:</span>
-                    <span class="info-value">${vendor.products}</span>
+                ${vendor.content ? `<div class="info-row">
+                    <span class="info-label">展示內容:</span>
+                    <span class="info-value">${vendor.content}</span>
                 </div>` : ''}
-                ${vendor.phone ? `<div class="info-row">
-                    <span class="info-label">聯絡電話:</span>
-                    <span class="info-value">${vendor.phone}</span>
-                </div>` : ''}
-                ${vendor.address ? `<div class="info-row">
-                    <span class="info-label">地址:</span>
-                    <span class="info-value">${vendor.address}</span>
-                </div>` : ''}
-                <div class="info-row">
-                    <span class="info-label">元素數量:</span>
-                    <span class="info-value">${vendor.svgIds.length} 個</span>
-                </div>
             `;
 
             // 計算Info Window的大小
@@ -1950,26 +2266,18 @@
             title.textContent = vendor.name;
 
             content.innerHTML = `
+                ${vendor.boothNumbers && vendor.boothNumbers.length > 0 ? `<div class="info-row">
+                    <span class="info-label">攤位編號:</span>
+                    <span class="info-value">${vendor.boothNumbers.join(', ')}</span>
+                </div>` : ''}
                 ${vendor.category ? `<div class="info-row">
                     <span class="info-label">產業類別:</span>
                     <span class="info-value">${vendor.category}</span>
                 </div>` : ''}
-                ${vendor.products ? `<div class="info-row">
-                    <span class="info-label">主要產品:</span>
-                    <span class="info-value">${vendor.products}</span>
+                ${vendor.content ? `<div class="info-row">
+                    <span class="info-label">展示內容:</span>
+                    <span class="info-value">${vendor.content}</span>
                 </div>` : ''}
-                ${vendor.phone ? `<div class="info-row">
-                    <span class="info-label">聯絡電話:</span>
-                    <span class="info-value">${vendor.phone}</span>
-                </div>` : ''}
-                ${vendor.address ? `<div class="info-row">
-                    <span class="info-label">地址:</span>
-                    <span class="info-value">${vendor.address}</span>
-                </div>` : ''}
-                <div class="info-row">
-                    <span class="info-label">元素數量:</span>
-                    <span class="info-value">${vendor.svgIds.length} 個</span>
-                </div>
             `;
 
             const maxX = window.innerWidth - 420;
@@ -1995,9 +2303,16 @@
             infoWindow.classList.remove('show');
             overlay.classList.remove('show');
 
-            // 同時退出聚焦模式
-            if (focusMode) {
-                exitFocusMode();
+            // 根據觸發方式決定行為
+            if (isSearchTriggered) {
+                // 搜尋觸發：保持聚光燈，但地圖回到初始大小
+                resetMapToInitialSize();
+                isSearchTriggered = false; // 重置狀態
+            } else {
+                // 點擊觸發：完全退出聚焦模式
+                if (focusMode) {
+                    exitFocusMode();
+                }
             }
         }
 
@@ -2485,7 +2800,12 @@
         function showExhibitionList() {
             const modal = document.getElementById('exhibitionModal');
 
-            // 獲取所有產業類別
+            // 更新統計資訊
+            const totalVendors = Object.keys(vendorData).length;
+            document.getElementById('totalCount').textContent = totalVendors;
+            document.getElementById('modalSubtitle').textContent = `${totalVendors} 家參展廠商`;
+
+            // 獲取所有產業類別並填充下拉選單
             const categories = new Set();
             Object.values(vendorData).forEach(vendor => {
                 if (vendor.category) {
@@ -2493,25 +2813,47 @@
                 }
             });
 
-            // 生成類別標籤
-            const categoryTabs = document.getElementById('categoryTabs');
-            categoryTabs.innerHTML = '';
-
-            // 添加"全部"標籤
-            const allTab = createCategoryTab('全部', true);
-            categoryTabs.appendChild(allTab);
-
-            // 添加各個類別標籤
-            Array.from(categories).forEach(category => {
-                const tab = createCategoryTab(category, false);
-                categoryTabs.appendChild(tab);
+            const categorySelect = document.getElementById('categorySelect');
+            categorySelect.innerHTML = '<option value="">所有產業類別</option>';
+            Array.from(categories).sort().forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categorySelect.appendChild(option);
             });
 
+            // 設置事件監聽器
+            setupModalEventListeners();
+
             // 顯示所有廠商
-            displayVendorCards();
+            displayVendorList();
 
             // 顯示對話框
             modal.classList.add('show');
+        }
+
+        // 設置模態框事件監聽器
+        function setupModalEventListeners() {
+            const searchInput = document.getElementById('modalSearchInput');
+            const categorySelect = document.getElementById('categorySelect');
+
+            // 移除舊的事件監聽器
+            searchInput.removeEventListener('input', handleModalSearch);
+            categorySelect.removeEventListener('change', handleCategoryChange);
+
+            // 添加新的事件監聽器
+            searchInput.addEventListener('input', handleModalSearch);
+            categorySelect.addEventListener('change', handleCategoryChange);
+        }
+
+        // 處理模態框內搜尋
+        function handleModalSearch() {
+            displayVendorList();
+        }
+
+        // 處理類別變更
+        function handleCategoryChange() {
+            displayVendorList();
         }
 
         // 創建類別標籤
@@ -2536,70 +2878,121 @@
             displayVendorCards(category === '全部' ? null : category);
         }
 
-        // 顯示廠商卡片
-        function displayVendorCards(filterCategory = null) {
-            const vendorGrid = document.getElementById('vendorGrid');
-            vendorGrid.innerHTML = '';
+        // 顯示廠商列表
+        function displayVendorList() {
+            const vendorList = document.getElementById('vendorList');
+            const searchInput = document.getElementById('modalSearchInput');
+            const categorySelect = document.getElementById('categorySelect');
 
-            let displayedCount = 0;
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const selectedCategory = categorySelect ? categorySelect.value : '';
 
-            Object.entries(vendorData).forEach(([name, vendor]) => {
-                // 篩選邏輯
-                if (filterCategory && vendor.category !== filterCategory) {
-                    return;
+            vendorList.innerHTML = '';
+
+            // 篩選廠商
+            const filteredVendors = Object.entries(vendorData).filter(([name, vendor]) => {
+                // 類別篩選
+                if (selectedCategory && vendor.category !== selectedCategory) {
+                    return false;
                 }
 
-                displayedCount++;
+                // 搜尋篩選
+                if (searchTerm) {
+                    const nameMatch = name.toLowerCase().includes(searchTerm);
+                    const boothMatch = vendor.boothNumbers &&
+                        vendor.boothNumbers.some(booth => booth.toString().toLowerCase().includes(searchTerm));
+                    const contentMatch = vendor.content && vendor.content.toLowerCase().includes(searchTerm);
 
-                // 創建卡片
-                const card = document.createElement('div');
-                card.className = 'vendor-card';
-                card.onclick = () => {
+                    if (!nameMatch && !boothMatch && !contentMatch) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            // 更新顯示數量
+            document.getElementById('displayCount').textContent = filteredVendors.length;
+
+            // 如果沒有結果，顯示空狀態
+            if (filteredVendors.length === 0) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+                emptyState.innerHTML = `
+                    <div class="empty-state-icon">🔍</div>
+                    <div class="empty-state-text">找不到符合條件的廠商</div>
+                    <div class="empty-state-subtext">請嘗試其他搜尋條件</div>
+                `;
+                vendorList.appendChild(emptyState);
+                return;
+            }
+
+            // 按廠商名稱排序
+            filteredVendors.sort(([a], [b]) => a.localeCompare(b, 'zh-TW'));
+
+            // 創建廠商項目
+            filteredVendors.forEach(([name, vendor]) => {
+                const item = document.createElement('div');
+                item.className = 'vendor-item';
+                item.onclick = () => {
                     closeExhibitionModal();
-                    // 搜尋並定位到該廠商
                     focusOnVendor(name);
                 };
 
-                // 創建內容容器（用於小手機佈局）
-                const contentWrapper = document.createElement('div');
-                contentWrapper.className = 'vendor-card-content';
+                // 廠商資訊
+                const info = document.createElement('div');
+                info.className = 'vendor-info';
 
-                // 卡片標題
-                const title = document.createElement('div');
-                title.className = 'vendor-card-title';
-                title.textContent = vendor.name;
-                contentWrapper.appendChild(title);
+                // 廠商名稱
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'vendor-name';
+                nameDiv.textContent = vendor.name;
+                info.appendChild(nameDiv);
 
-                // 產品資訊（手機上可能隱藏）
-                if (vendor.products) {
-                    const info = document.createElement('div');
-                    info.className = 'vendor-card-info';
-                    // 限制產品描述長度
-                    const productText = vendor.products.length > 30 ?
-                        vendor.products.substring(0, 30) + '...' : vendor.products;
-                    info.textContent = productText;
-                    contentWrapper.appendChild(info);
+                // 詳細資訊
+                const details = document.createElement('div');
+                details.className = 'vendor-details';
+
+                // 攤位編號（優先顯示）
+                if (vendor.boothNumbers && vendor.boothNumbers.length > 0) {
+                    const booth = document.createElement('span');
+                    booth.className = 'vendor-booth';
+                    // 只顯示第一個攤位編號，如果有多個則加省略號
+                    const boothText = vendor.boothNumbers.length > 1 ?
+                        `攤位 ${vendor.boothNumbers[0]}...` :
+                        `攤位 ${vendor.boothNumbers[0]}`;
+                    booth.textContent = boothText;
+                    details.appendChild(booth);
                 }
 
-                // 攤位編號
-                if (vendor.svgIds && vendor.svgIds.length > 0) {
-                    const booth = document.createElement('div');
-                    booth.className = 'vendor-card-booth';
-                    // 簡化攤位顯示
-                    const boothNumbers = vendor.svgIds.slice(0, 2).map(id => id.replace('svg_', '')).join(', ');
-                    booth.textContent = `${boothNumbers}${vendor.svgIds.length > 2 ? '...' : ''}`;
-                    contentWrapper.appendChild(booth);
+                // 展示內容（次要顯示）
+                if (vendor.content) {
+                    const content = document.createElement('span');
+                    content.className = 'vendor-content';
+                    content.textContent = vendor.content;
+                    details.appendChild(content);
                 }
 
-                card.appendChild(contentWrapper);
-                vendorGrid.appendChild(card);
+                // 產業類別（最後顯示）
+                if (vendor.category) {
+                    const category = document.createElement('span');
+                    category.className = 'vendor-category';
+                    category.setAttribute('data-category', vendor.category);
+                    category.textContent = vendor.category;
+                    details.appendChild(category);
+                }
+
+                info.appendChild(details);
+                item.appendChild(info);
+
+                // 箭頭圖標
+                const arrow = document.createElement('div');
+                arrow.className = 'vendor-arrow';
+                arrow.textContent = '›';
+                item.appendChild(arrow);
+
+                vendorList.appendChild(item);
             });
-
-            // 更新標題顯示數量
-            const modalTitle = document.querySelector('.modal-title');
-            if (modalTitle) {
-                modalTitle.textContent = `展區列表 (${displayedCount} 家廠商)`;
-            }
         }
 
         // 關閉展區列表對話框
