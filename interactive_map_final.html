@@ -149,7 +149,9 @@
 
         #glassOverlay.active {
             opacity: 1;
+            pointer-events: auto;
         }
+
 
         /* 移除聚光燈容器 - 不再需要 */
 
@@ -1307,81 +1309,10 @@
             }
         }
 
-        // 搜尋觸發關閉後的智能定位
+        // 重置地圖到初始大小但保持當前位置
         function resetMapToInitialSize() {
-            if (!currentHighlight) return;
-
-            // 計算聚光燈區域的邊界
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-
-            currentHighlight.forEach(elementId => {
-                const element = mainSvg.querySelector(`#${elementId}`);
-                if (element) {
-                    const bbox = element.getBBox();
-                    minX = Math.min(minX, bbox.x);
-                    minY = Math.min(minY, bbox.y);
-                    maxX = Math.max(maxX, bbox.x + bbox.width);
-                    maxY = Math.max(maxY, bbox.y + bbox.height);
-                }
-            });
-
-            if (minX === Infinity) return;
-
-            // 計算聚光燈區域中心和尺寸
-            const centerX = (minX + maxX) / 2;
-            const centerY = (minY + maxY) / 2;
-            const width = maxX - minX;
-            const height = maxY - minY;
-
-            // 根據設備和聚光燈大小決定縮放策略
-            const containerWidth = window.innerWidth;
-            const containerHeight = window.innerHeight;
-            const isMobile = containerWidth <= 768;
-
-            let targetScale;
-            if (isMobile) {
-                // 手機：確保聚光燈區域占螢幕適當比例（約40-60%）
-                const scaleByWidth = (containerWidth * 0.5) / width;
-                const scaleByHeight = (containerHeight * 0.5) / height;
-                targetScale = Math.min(scaleByWidth, scaleByHeight);
-                // 限制縮放範圍
-                targetScale = Math.max(0.3, Math.min(1.5, targetScale));
-            } else {
-                // 桌面：使用較小的縮放比例讓用戶看到更多上下文
-                targetScale = getInitialScale() * 1.2;
-            }
-
-            // 計算目標位置：將聚光燈區域置中
-            const targetX = -centerX * targetScale + containerWidth / 2;
-            const targetY = -centerY * targetScale + containerHeight / 2;
-
-            // 平滑動畫到目標位置
-            const startScale = scale;
-            const startX = translateX;
-            const startY = translateY;
-
-            const duration = 800;
-            const startTime = performance.now();
-
-            function animate(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-
-                // 使用緩動函數
-                const easeProgress = 1 - Math.pow(1 - progress, 3);
-
-                scale = startScale + (targetScale - startScale) * easeProgress;
-                translateX = startX + (targetX - startX) * easeProgress;
-                translateY = startY + (targetY - startY) * easeProgress;
-
-                updateTransform();
-
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                }
-            }
-
-            requestAnimationFrame(animate);
+            scale = getInitialScale();
+            updateTransform();
         }
 
         // 將地圖置中於螢幕
@@ -1728,7 +1659,7 @@
                     const element = mainSvg.querySelector(`#${svgId}`);
                     if (element) {
                         if (otherVendorName === vendorName) {
-                            // 放大選中的元素，保持原色和位置
+                            // 選中的元素處理
                             const bbox = element.getBBox();
                             const centerX = bbox.x + bbox.width / 2;
                             const centerY = bbox.y + bbox.height / 2;
@@ -1737,6 +1668,7 @@
                             element.setAttribute('filter', 'url(#vendor-highlight)');
                             element.style.transition = 'filter 0.3s ease';
                             element.style.zIndex = '150';
+
                         } else {
                             // 使用SVG原生filter模糊其他廠商元素
                             element.setAttribute('filter', 'url(#vendor-blur)');
@@ -1798,6 +1730,27 @@
                 infoWindow.classList.remove('show');
                 overlay.classList.remove('show');
             }
+        }
+
+        // 應用搜尋縮放效果
+        function applySearchScaleEffect(vendorName) {
+            const vendor = vendorData[vendorName];
+            if (!vendor) return;
+
+            vendor.svgIds.forEach(svgId => {
+                const element = mainSvg.querySelector(`#${svgId}`);
+                if (element) {
+                    // 獲取元素的實際邊界框
+                    const bbox = element.getBBox();
+                    const centerX = bbox.x + bbox.width / 2;
+                    const centerY = bbox.y + bbox.height / 2;
+
+                    // 使用 SVG 座標系的精確中心點
+                    element.style.transformOrigin = `${centerX}px ${centerY}px`;
+                    element.style.transform = 'scale(1.5)';
+                    console.log('Applied search scale to:', svgId, `origin: ${centerX}, ${centerY}`);
+                }
+            });
         }
 
         // 計算搜尋相關度分數
@@ -2056,6 +2009,11 @@
 
                     enterFocusMode(vendorName, updatedCenterX, updatedCenterY);
 
+                    // 延遲應用縮放效果，確保聚光燈先建立
+                    setTimeout(() => {
+                        applySearchScaleEffect(vendorName);
+                    }, 100);
+
                     setTimeout(() => {
                         // 智能決定Info Window的顯示位置
                         showInfoWindowSmart(vendorName, updatedCenterX, updatedCenterY);
@@ -2092,8 +2050,8 @@
                     targetScreenX = containerWidth * 0.65;
                     targetScreenY = containerHeight * 0.4; // 稍微偏上
                 } else {
-                    // 左側廠商：放在螢幕左側1/3處，Info Window在右側
-                    targetScreenX = containerWidth * 0.35;
+                    // 左側廠商：放在螢幕左側45%處，Info Window在右側
+                    targetScreenX = containerWidth * 0.45;
                     targetScreenY = containerHeight * 0.4; // 稍微偏上
                 }
 
@@ -2305,8 +2263,7 @@
 
             // 根據觸發方式決定行為
             if (isSearchTriggered) {
-                // 搜尋觸發：保持聚光燈，但地圖回到初始大小
-                resetMapToInitialSize();
+                // 搜尋觸發：只關閉 Info Window，保持聚光燈、元素縮放和地圖狀態
                 isSearchTriggered = false; // 重置狀態
             } else {
                 // 點擊觸發：完全退出聚焦模式
@@ -2451,6 +2408,15 @@
                     hideSearchResults();
                 }
             });
+
+            // 聚光燈模式點擊暗區退出
+            document.getElementById('glassOverlay').addEventListener('click', (e) => {
+                // 只有點擊暗區時才退出（不是點擊關閉按鈕）
+                if (e.target.id === 'glassOverlay' && focusMode) {
+                    exitFocusMode();
+                }
+            });
+
 
             // 螢幕方向改變或尺寸變更時重新計算位置
             let resizeTimer;
