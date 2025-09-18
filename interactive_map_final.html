@@ -291,29 +291,110 @@
             }
         }
 
-        /* 搜尋框 */
-        .search-box {
+        /* 搜尋框容器 */
+        .top-controls {
             position: fixed;
             top: 20px;
             left: 20px;
             z-index: 1000;
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            gap: 12px;
             transition: opacity 0.3s ease;
         }
 
+        /* 搜尋框 */
+        .search-box {
+            display: flex;
+            gap: 10px;
+            position: relative;
+        }
+
         @media (max-width: 768px) {
-            .search-box {
+            .top-controls {
                 top: 20px;
                 left: 50%;
                 transform: translateX(-50%);
                 width: calc(100% - 40px);
                 max-width: 350px;
             }
+
+            .search-box {
+                width: 100%;
+            }
         }
 
-        .search-box.hide {
+        .top-controls.hide {
             opacity: 0.3;
+        }
+
+        /* 會場選擇和展區按鈕容器 */
+        .venue-controls {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        /* 會場選擇下拉選單 */
+        .venue-selector {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-size: 15px;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            outline: none;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+            padding-right: 40px;
+        }
+
+        .venue-selector:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            background-color: rgba(255,255,255,0.98);
+        }
+
+        /* 展區列表按鈕 */
+        .exhibition-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-size: 15px;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .exhibition-btn:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            background-color: rgba(255,255,255,0.98);
+        }
+
+        .exhibition-btn:active {
+            transform: scale(0.98);
+        }
+
+        .exhibition-btn::before {
+            content: '☰';
+            font-size: 18px;
         }
 
         .search-input {
@@ -373,6 +454,360 @@
 
         .search-btn:hover {
             background: #2563eb;
+        }
+
+        /* 搜尋結果列表 */
+        #searchResults {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 8px;
+            background: rgba(255,255,255,0.98);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1001;
+            display: none;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        #searchResults.show {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #e2e8f0;
+            transition: background 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .search-result-item.selected {
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .vendor-name {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 15px;
+        }
+
+        .vendor-info {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        .vendor-score {
+            background: #3b82f6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 32px;
+            text-align: center;
+        }
+
+        .search-result-header {
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            #searchResults {
+                left: -10px;
+                right: -10px;
+            }
+        }
+
+        /* 展區列表對話框 */
+        #exhibitionModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #exhibitionModal.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        #exhibitionModal.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .modal-close {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 24px;
+            color: #64748b;
+            border-radius: 50%;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: calc(85vh - 140px);
+        }
+
+        /* 產業類別標籤 */
+        .category-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .category-tab {
+            padding: 8px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            background: white;
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .category-tab:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .category-tab.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        /* 廠商卡片網格 */
+        .vendor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .vendor-card {
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .vendor-card:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+            transform: translateY(-1px);
+            border-color: #3b82f6;
+        }
+
+        .vendor-card:active {
+            transform: scale(0.98);
+        }
+
+        .vendor-card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .vendor-card-info {
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            flex-grow: 1;
+        }
+
+        .vendor-card-booth {
+            display: inline-block;
+            padding: 2px 6px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #475569;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        /* 手機版優化 */
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 100%;
+                height: 100%;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+
+            .modal-header {
+                padding: 16px 20px;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background: white;
+            }
+
+            .modal-title {
+                font-size: 20px;
+            }
+
+            .modal-body {
+                padding: 16px;
+                max-height: calc(100vh - 70px);
+            }
+
+            .category-tabs {
+                gap: 8px;
+                margin-bottom: 16px;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 4px;
+            }
+
+            .category-tab {
+                padding: 6px 16px;
+                font-size: 13px;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            /* 手機上使用兩列顯示 */
+            .vendor-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .vendor-card {
+                padding: 10px;
+                border-radius: 8px;
+            }
+
+            .vendor-card-title {
+                font-size: 14px;
+                margin-bottom: 3px;
+            }
+
+            .vendor-card-info {
+                font-size: 11px;
+                -webkit-line-clamp: 1;
+            }
+
+            .vendor-card-booth {
+                padding: 1px 5px;
+                font-size: 10px;
+                margin-top: 4px;
+            }
+        }
+
+        /* 小手機優化 (< 380px) */
+        @media (max-width: 380px) {
+            .vendor-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .vendor-card {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px;
+            }
+
+            .vendor-card-content {
+                flex: 1;
+            }
+
+            .vendor-card-title {
+                font-size: 15px;
+            }
+
+            .vendor-card-info {
+                display: none;
+            }
+
+            .vendor-card-booth {
+                margin-top: 2px;
+                display: inline-block;
+            }
         }
 
         /* Info Window 遮罩層 */
@@ -599,10 +1034,25 @@
         <!-- 圖層切換提示 -->
         <div class="layer-notice" id="layerNotice"></div>
 
-        <!-- 搜尋框 -->
-        <div class="search-box" id="searchBox">
-            <input type="text" class="search-input" id="searchInput" placeholder="搜尋廠商...">
-            <button class="search-btn" onclick="searchVendor()">搜尋</button>
+        <!-- 頂部控制區 -->
+        <div class="top-controls" id="topControls">
+            <!-- 搜尋框 -->
+            <div class="search-box" id="searchBox">
+                <input type="text" class="search-input" id="searchInput" placeholder="搜尋參展廠商">
+                <button class="search-btn" onclick="searchVendor()">搜尋</button>
+                <div id="searchResults"></div>
+            </div>
+
+            <!-- 會場選擇和展區列表 -->
+            <div class="venue-controls">
+                <select class="venue-selector" id="venueSelector" onchange="changeVenue()">
+                    <option value="hall1-1f">南港一館-1樓</option>
+                    <option value="hall1-4f">南港一館-4樓</option>
+                    <option value="hall2-1f">南港二館-1樓</option>
+                    <option value="hall2-4f">南港二館-4樓</option>
+                </select>
+                <button class="exhibition-btn" onclick="showExhibitionList()">展區列表</button>
+            </div>
         </div>
 
         <!-- 控制按鈕 -->
@@ -620,6 +1070,24 @@
             <button class="close-btn" onclick="closeInfoWindow()">✕</button>
             <h3 id="infoTitle">廠商資訊</h3>
             <div id="infoContent"></div>
+        </div>
+
+        <!-- 展區列表對話框 -->
+        <div id="exhibitionModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">展區列表</h2>
+                    <button class="modal-close" onclick="closeExhibitionModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="category-tabs" id="categoryTabs">
+                        <!-- 動態生成的產業類別標籤 -->
+                    </div>
+                    <div class="vendor-grid" id="vendorGrid">
+                        <!-- 動態生成的廠商卡片 -->
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -873,13 +1341,19 @@
                 // 事件處理
                 let tapStartTime, tapStartX, tapStartY, hasMoved;
 
-                button.addEventListener('mouseenter', () => {
-                    hoverRect.style.opacity = '1';
-                });
+                // 檢測是否為觸控設備
+                const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-                button.addEventListener('mouseleave', () => {
-                    hoverRect.style.opacity = '0';
-                });
+                // 只在非觸控設備上顯示hover效果
+                if (!isTouchDevice) {
+                    button.addEventListener('mouseenter', () => {
+                        hoverRect.style.opacity = '1';
+                    });
+
+                    button.addEventListener('mouseleave', () => {
+                        hoverRect.style.opacity = '0';
+                    });
+                }
 
                 button.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -892,7 +1366,8 @@
                     tapStartX = e.touches[0].clientX;
                     tapStartY = e.touches[0].clientY;
                     hasMoved = false;
-                    hoverRect.style.opacity = '1';
+                    // 移除觸控時的hover效果
+                    // hoverRect.style.opacity = '1';
                 }, {passive: false});
 
                 button.addEventListener('touchmove', (e) => {
@@ -901,7 +1376,7 @@
                     const distance = Math.hypot(moveX - tapStartX, moveY - tapStartY);
                     if (distance > 10) {
                         hasMoved = true;
-                        hoverRect.style.opacity = '0';
+                        // hoverRect.style.opacity = '0';
                     }
                 }, {passive: false});
 
@@ -909,7 +1384,7 @@
                     e.preventDefault();
                     e.stopPropagation();
 
-                    hoverRect.style.opacity = '0';
+                    // hoverRect.style.opacity = '0';
 
                     const endTime = Date.now();
                     const tapDuration = endTime - tapStartTime;
@@ -1001,7 +1476,7 @@
             glassOverlay.classList.add('active');
 
             // 2. 隱藏其他UI元素
-            document.getElementById('searchBox').classList.add('hide');
+            document.getElementById('topControls').classList.add('hide');
             document.getElementById('controls').classList.add('hide');
 
             // 3. 處理所有廠商元素的顯示
@@ -1071,7 +1546,7 @@
 
             // 移除所有效果
             document.getElementById('glassOverlay').classList.remove('active');
-            document.getElementById('searchBox').classList.remove('hide');
+            document.getElementById('topControls').classList.remove('hide');
             document.getElementById('controls').classList.remove('hide');
 
             // 關閉 Info Window（只關閉視窗，不再調用 closeInfoWindow 避免循環）
@@ -1083,43 +1558,387 @@
             }
         }
 
-        // 搜尋廠商
-        function searchVendor() {
-            const searchTerm = document.getElementById('searchInput').value.trim();
-            if (!searchTerm) return;
+        // 計算搜尋相關度分數
+        function calculateRelevanceScore(searchTerm, vendorName, svgIds) {
+            const searchLower = searchTerm.toLowerCase();
+            const vendorLower = vendorName.toLowerCase();
+            let maxScore = 0;
 
-            const vendor = Object.keys(vendorData).find(name =>
-                name.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-
-            if (vendor) {
-                const firstSvgId = vendorData[vendor].svgIds[0];
-                const element = mainSvg.querySelector(`#${firstSvgId}`);
-                if (element) {
-                    const rect = element.getBoundingClientRect();
-                    const centerX = rect.left + rect.width / 2;
-                    const centerY = rect.top + rect.height / 2;
-
-                    enterFocusMode(vendor, centerX, centerY);
-
-                    setTimeout(() => {
-                        showInfoWindow(vendor, centerX + 20, centerY + 20);
-                    }, 300);
-                }
-
-                if (scale < 1) {
-                    scale = 1;
-                    updateTransform();
-                    ;
-                }
-            } else {
-                alert('找不到符合的廠商');
+            // 1. 廠商名稱匹配
+            if (vendorLower === searchLower) {
+                maxScore = Math.max(maxScore, 100); // 完全匹配
+            } else if (vendorLower.startsWith(searchLower)) {
+                maxScore = Math.max(maxScore, 80); // 開頭匹配
+            } else if (vendorLower.includes(searchLower)) {
+                maxScore = Math.max(maxScore, 60); // 包含匹配
             }
 
+            // 2. 攤位編號匹配
+            svgIds.forEach(svgId => {
+                const svgIdLower = svgId.toLowerCase();
+                if (svgIdLower === searchLower) {
+                    maxScore = Math.max(maxScore, 95); // SVG ID完全匹配
+                } else if (svgIdLower.includes(searchLower)) {
+                    maxScore = Math.max(maxScore, 70); // SVG ID包含匹配
+                }
+
+                // 檢查數字部分匹配（如搜尋 "658" 匹配 "svg_658"）
+                const numberPart = svgId.replace(/[^0-9]/g, '');
+                if (numberPart && searchTerm.match(/^\d+$/) && numberPart.includes(searchTerm)) {
+                    maxScore = Math.max(maxScore, 85); // 數字部分匹配
+                }
+            });
+
+            // 3. 部分字符匹配（模糊匹配）
+            if (maxScore === 0) {
+                const similarity = calculateStringSimilarity(searchLower, vendorLower);
+                if (similarity > 0.3) { // 相似度閾值
+                    maxScore = Math.max(maxScore, Math.floor(similarity * 50));
+                }
+            }
+
+            return maxScore;
+        }
+
+        // 計算字符串相似度（簡化版）
+        function calculateStringSimilarity(str1, str2) {
+            if (str1.length === 0 || str2.length === 0) return 0;
+
+            // 計算共同字符數
+            let matches = 0;
+            const shorter = str1.length < str2.length ? str1 : str2;
+            const longer = str1.length >= str2.length ? str1 : str2;
+
+            for (let char of shorter) {
+                if (longer.includes(char)) {
+                    matches++;
+                }
+            }
+
+            return matches / Math.max(str1.length, str2.length);
+        }
+
+        // 模糊搜尋廠商
+        function searchVendor() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            if (!searchTerm) {
+                hideSearchResults();
+                return;
+            }
+
+            // 搜尋所有符合的廠商並計算相關度
+            const searchResults = [];
+
+            Object.keys(vendorData).forEach(vendorName => {
+                const vendor = vendorData[vendorName];
+                const score = calculateRelevanceScore(searchTerm, vendorName, vendor.svgIds);
+
+                if (score > 0) {
+                    searchResults.push({
+                        name: vendorName,
+                        vendor: vendor,
+                        score: score
+                    });
+                }
+            });
+
+            // 按相關度排序
+            searchResults.sort((a, b) => b.score - a.score);
+
+            if (searchResults.length > 0) {
+                // 如果有多個結果，或者最高分不是完全匹配（100分），就顯示選擇列表
+                if (searchResults.length > 1 || searchResults[0].score < 100) {
+                    // 顯示搜尋結果列表讓用戶選擇
+                    displaySearchResults(searchResults.slice(0, 10)); // 最多顯示10個結果
+                } else {
+                    // 只有一個結果且是完全匹配（100分），直接定位
+                    focusOnVendor(searchResults[0].name);
+                    hideSearchResults();
+                    document.getElementById('searchInput').value = '';
+                }
+            } else {
+                // 顯示搜尋建議
+                const suggestions = suggestAlternatives(searchTerm);
+                if (suggestions.length > 0) {
+                    displaySearchResults(suggestions);
+                } else {
+                    alert('找不到符合的廠商或攤位編號');
+                    hideSearchResults();
+                }
+            }
+        }
+
+        // 顯示搜尋結果列表
+        function displaySearchResults(results) {
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.innerHTML = '';
+
+            if (results.length === 0) {
+                hideSearchResults();
+                return;
+            }
+
+            // 添加標題
+            const header = document.createElement('div');
+            header.className = 'search-result-header';
+            header.textContent = `找到 ${results.length} 個結果`;
+            resultsContainer.appendChild(header);
+
+            // 添加結果項目
+            results.forEach((result, index) => {
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+                if (index === 0) item.classList.add('selected');
+
+                const infoDiv = document.createElement('div');
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'vendor-name';
+                nameDiv.textContent = result.name;
+                infoDiv.appendChild(nameDiv);
+
+                // 顯示攤位編號資訊
+                if (result.vendor && result.vendor.svgIds) {
+                    const infoText = document.createElement('div');
+                    infoText.className = 'vendor-info';
+                    const svgCount = result.vendor.svgIds.length;
+                    const firstIds = result.vendor.svgIds.slice(0, 3).map(id => id.replace('svg_', '')).join(', ');
+                    infoText.textContent = `攤位: ${firstIds}${svgCount > 3 ? '...' : ''} (共${svgCount}個)`;
+                    infoDiv.appendChild(infoText);
+                }
+
+                item.appendChild(infoDiv);
+
+                // 顯示相關度分數
+                const scoreDiv = document.createElement('div');
+                scoreDiv.className = 'vendor-score';
+                scoreDiv.textContent = result.score;
+                item.appendChild(scoreDiv);
+
+                // 點擊事件
+                item.addEventListener('click', () => {
+                    selectSearchResult(result.name);
+                });
+
+                resultsContainer.appendChild(item);
+            });
+
+            resultsContainer.classList.add('show');
+        }
+
+        // 隱藏搜尋結果
+        function hideSearchResults() {
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.classList.remove('show');
+            resultsContainer.innerHTML = '';
+        }
+
+        // 選擇搜尋結果
+        function selectSearchResult(vendorName) {
+            focusOnVendor(vendorName);
+            hideSearchResults();
             document.getElementById('searchInput').value = '';
         }
 
-        // 顯示 Info Window（平滑出現）
+        // 專注於特定廠商
+        function focusOnVendor(vendorName) {
+            const vendor = vendorData[vendorName];
+            if (!vendor) return;
+
+            // 計算所有相關元素的中心點
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let hasValidElements = false;
+
+            vendor.svgIds.forEach(svgId => {
+                const element = mainSvg.querySelector(`#${svgId}`);
+                if (element) {
+                    const bbox = element.getBBox();
+                    minX = Math.min(minX, bbox.x);
+                    minY = Math.min(minY, bbox.y);
+                    maxX = Math.max(maxX, bbox.x + bbox.width);
+                    maxY = Math.max(maxY, bbox.y + bbox.height);
+                    hasValidElements = true;
+                }
+            });
+
+            if (!hasValidElements) return;
+
+            // 計算廠商區域的中心點（SVG座標系）
+            const svgCenterX = (minX + maxX) / 2;
+            const svgCenterY = (minY + maxY) / 2;
+
+            // 確保有適當的縮放級別
+            if (scale < 1) {
+                scale = 1;
+            }
+
+            // 將地圖移動到讓目標廠商置中
+            centerMapOnVendor(svgCenterX, svgCenterY);
+
+            // 計算螢幕座標用於顯示效果
+            const firstSvgId = vendor.svgIds[0];
+            const element = mainSvg.querySelector(`#${firstSvgId}`);
+            if (element) {
+                const rect = element.getBoundingClientRect();
+                const screenCenterX = rect.left + rect.width / 2;
+                const screenCenterY = rect.top + rect.height / 2;
+
+                // 延遲一下讓地圖移動完成，然後重新計算位置
+                setTimeout(() => {
+                    // 重新獲取元素位置（地圖已經移動）
+                    const updatedRect = element.getBoundingClientRect();
+                    const updatedCenterX = updatedRect.left + updatedRect.width / 2;
+                    const updatedCenterY = updatedRect.top + updatedRect.height / 2;
+
+                    enterFocusMode(vendorName, updatedCenterX, updatedCenterY);
+
+                    setTimeout(() => {
+                        // 智能決定Info Window的顯示位置
+                        showInfoWindowSmart(vendorName, updatedCenterX, updatedCenterY);
+                    }, 300);
+                }, 600);
+            }
+        }
+
+        // 將地圖移動到指定的SVG座標置中
+        function centerMapOnVendor(svgX, svgY) {
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+
+            // 獲取SVG的原始尺寸
+            const svgRect = mainSvg.getBoundingClientRect();
+            const svgWidth = mainSvg.viewBox.baseVal.width || svgRect.width;
+            const svgHeight = mainSvg.viewBox.baseVal.height || svgRect.height;
+
+            // 計算需要的位移量
+            // 目標是讓SVG座標(svgX, svgY)顯示在螢幕中心
+            translateX = -(svgX * scale - containerWidth / 2);
+            translateY = -(svgY * scale - containerHeight / 2);
+
+            // 應用邊界限制
+            applyBoundaryConstraints();
+
+            // 平滑過渡
+            svgContainer.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+            updateTransform();
+
+            // 移除過渡效果
+            setTimeout(() => {
+                svgContainer.style.transition = '';
+            }, 500);
+        }
+
+        // 提供搜尋建議
+        function suggestAlternatives(searchTerm) {
+            const suggestions = [];
+            const searchLower = searchTerm.toLowerCase();
+
+            Object.keys(vendorData).forEach(vendorName => {
+                const vendor = vendorData[vendorName];
+
+                // 檢查是否有部分匹配
+                if (vendorName.toLowerCase().includes(searchLower.charAt(0)) ||
+                    searchLower.includes(vendorName.toLowerCase().charAt(0))) {
+                    const score = calculateRelevanceScore(searchTerm, vendorName, vendor.svgIds);
+                    if (score > 20) {
+                        suggestions.push({
+                            name: vendorName,
+                            vendor: vendor,
+                            score: score
+                        });
+                    }
+                }
+            });
+
+            return suggestions.sort((a, b) => b.score - a.score).slice(0, 3);
+        }
+
+
+        // 智能顯示Info Window（避免遮擋攤位）
+        function showInfoWindowSmart(vendorName, targetX, targetY) {
+            const vendor = vendorData[vendorName];
+            if (!vendor) return;
+
+            const infoWindow = document.getElementById('infoWindow');
+            const title = document.getElementById('infoTitle');
+            const content = document.getElementById('infoContent');
+
+            title.textContent = vendor.name;
+
+            content.innerHTML = `
+                ${vendor.category ? `<div class="info-row">
+                    <span class="info-label">產業類別:</span>
+                    <span class="info-value">${vendor.category}</span>
+                </div>` : ''}
+                ${vendor.products ? `<div class="info-row">
+                    <span class="info-label">主要產品:</span>
+                    <span class="info-value">${vendor.products}</span>
+                </div>` : ''}
+                ${vendor.phone ? `<div class="info-row">
+                    <span class="info-label">聯絡電話:</span>
+                    <span class="info-value">${vendor.phone}</span>
+                </div>` : ''}
+                ${vendor.address ? `<div class="info-row">
+                    <span class="info-label">地址:</span>
+                    <span class="info-value">${vendor.address}</span>
+                </div>` : ''}
+                <div class="info-row">
+                    <span class="info-label">元素數量:</span>
+                    <span class="info-value">${vendor.svgIds.length} 個</span>
+                </div>
+            `;
+
+            // 計算Info Window的大小
+            const infoWidth = 380;
+            const infoHeight = 300;
+            const padding = 30;
+
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+
+            // 判斷目標在螢幕的哪個象限
+            const isRightSide = targetX > screenWidth / 2;
+            const isBottomSide = targetY > screenHeight / 2;
+
+            let finalX, finalY;
+
+            // 根據象限決定Info Window的位置
+            if (isRightSide && isBottomSide) {
+                // 右下：Info Window顯示在左上
+                finalX = targetX - infoWidth - padding;
+                finalY = targetY - infoHeight - padding;
+            } else if (isRightSide && !isBottomSide) {
+                // 右上：Info Window顯示在左下
+                finalX = targetX - infoWidth - padding;
+                finalY = targetY + padding;
+            } else if (!isRightSide && isBottomSide) {
+                // 左下：Info Window顯示在右上
+                finalX = targetX + padding;
+                finalY = targetY - infoHeight - padding;
+            } else {
+                // 左上：Info Window顯示在右下（預設）
+                finalX = targetX + padding;
+                finalY = targetY + padding;
+            }
+
+            // 確保不超出螢幕邊界
+            finalX = Math.max(10, Math.min(finalX, screenWidth - infoWidth - 10));
+            finalY = Math.max(10, Math.min(finalY, screenHeight - infoHeight - 10));
+
+            infoWindow.style.left = finalX + 'px';
+            infoWindow.style.top = finalY + 'px';
+
+            // 顯示遮罩層和info窗口
+            const overlay = document.getElementById('infoWindowOverlay');
+            overlay.classList.add('show');
+
+            // 觸發平滑動畫
+            setTimeout(() => {
+                infoWindow.classList.add('show');
+            }, 10);
+        }
+
+        // 顯示 Info Window（平滑出現）- 保留原始版本供其他地方使用
         function showInfoWindow(vendorName, x, y) {
             const vendor = vendorData[vendorName];
             if (!vendor) return;
@@ -1301,10 +2120,20 @@
                 }
             });
 
-            // ESC 退出聚焦
+            // ESC 退出聚焦或關閉搜尋結果
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && focusMode) {
-                    exitFocusMode();
+                if (e.key === 'Escape') {
+                    if (focusMode) {
+                        exitFocusMode();
+                    }
+                    hideSearchResults();
+                }
+            });
+
+            // 點擊外部關閉搜尋結果
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#searchBox')) {
+                    hideSearchResults();
                 }
             });
 
@@ -1639,6 +2468,152 @@
         }
 
         // updateUI 函數已移除 - 不再顯示縮放比例等資訊
+
+        // 會場切換功能
+        function changeVenue() {
+            const venueSelector = document.getElementById('venueSelector');
+            const selectedVenue = venueSelector.value;
+
+            // TODO: 根據選擇的會場載入不同的地圖
+            console.log('切換到會場:', selectedVenue);
+
+            // 這裡可以根據會場載入不同的SVG檔案
+            // await loadSVG(selectedVenue);
+        }
+
+        // 顯示展區列表
+        function showExhibitionList() {
+            const modal = document.getElementById('exhibitionModal');
+
+            // 獲取所有產業類別
+            const categories = new Set();
+            Object.values(vendorData).forEach(vendor => {
+                if (vendor.category) {
+                    categories.add(vendor.category);
+                }
+            });
+
+            // 生成類別標籤
+            const categoryTabs = document.getElementById('categoryTabs');
+            categoryTabs.innerHTML = '';
+
+            // 添加"全部"標籤
+            const allTab = createCategoryTab('全部', true);
+            categoryTabs.appendChild(allTab);
+
+            // 添加各個類別標籤
+            Array.from(categories).forEach(category => {
+                const tab = createCategoryTab(category, false);
+                categoryTabs.appendChild(tab);
+            });
+
+            // 顯示所有廠商
+            displayVendorCards();
+
+            // 顯示對話框
+            modal.classList.add('show');
+        }
+
+        // 創建類別標籤
+        function createCategoryTab(category, isActive) {
+            const tab = document.createElement('button');
+            tab.className = 'category-tab';
+            if (isActive) tab.classList.add('active');
+            tab.textContent = category;
+            tab.onclick = () => filterByCategory(category, tab);
+            return tab;
+        }
+
+        // 按類別篩選
+        function filterByCategory(category, tabElement) {
+            // 更新標籤狀態
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            tabElement.classList.add('active');
+
+            // 篩選並顯示廠商
+            displayVendorCards(category === '全部' ? null : category);
+        }
+
+        // 顯示廠商卡片
+        function displayVendorCards(filterCategory = null) {
+            const vendorGrid = document.getElementById('vendorGrid');
+            vendorGrid.innerHTML = '';
+
+            let displayedCount = 0;
+
+            Object.entries(vendorData).forEach(([name, vendor]) => {
+                // 篩選邏輯
+                if (filterCategory && vendor.category !== filterCategory) {
+                    return;
+                }
+
+                displayedCount++;
+
+                // 創建卡片
+                const card = document.createElement('div');
+                card.className = 'vendor-card';
+                card.onclick = () => {
+                    closeExhibitionModal();
+                    // 搜尋並定位到該廠商
+                    focusOnVendor(name);
+                };
+
+                // 創建內容容器（用於小手機佈局）
+                const contentWrapper = document.createElement('div');
+                contentWrapper.className = 'vendor-card-content';
+
+                // 卡片標題
+                const title = document.createElement('div');
+                title.className = 'vendor-card-title';
+                title.textContent = vendor.name;
+                contentWrapper.appendChild(title);
+
+                // 產品資訊（手機上可能隱藏）
+                if (vendor.products) {
+                    const info = document.createElement('div');
+                    info.className = 'vendor-card-info';
+                    // 限制產品描述長度
+                    const productText = vendor.products.length > 30 ?
+                        vendor.products.substring(0, 30) + '...' : vendor.products;
+                    info.textContent = productText;
+                    contentWrapper.appendChild(info);
+                }
+
+                // 攤位編號
+                if (vendor.svgIds && vendor.svgIds.length > 0) {
+                    const booth = document.createElement('div');
+                    booth.className = 'vendor-card-booth';
+                    // 簡化攤位顯示
+                    const boothNumbers = vendor.svgIds.slice(0, 2).map(id => id.replace('svg_', '')).join(', ');
+                    booth.textContent = `${boothNumbers}${vendor.svgIds.length > 2 ? '...' : ''}`;
+                    contentWrapper.appendChild(booth);
+                }
+
+                card.appendChild(contentWrapper);
+                vendorGrid.appendChild(card);
+            });
+
+            // 更新標題顯示數量
+            const modalTitle = document.querySelector('.modal-title');
+            if (modalTitle) {
+                modalTitle.textContent = `展區列表 (${displayedCount} 家廠商)`;
+            }
+        }
+
+        // 關閉展區列表對話框
+        function closeExhibitionModal() {
+            const modal = document.getElementById('exhibitionModal');
+            modal.classList.remove('show');
+        }
+
+        // 點擊外部關閉對話框
+        document.getElementById('exhibitionModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeExhibitionModal();
+            }
+        });
 
         // 初始化
         window.addEventListener('DOMContentLoaded', async () => {
