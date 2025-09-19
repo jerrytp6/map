@@ -1126,6 +1126,34 @@
         .layer-notice.show {
             display: block;
         }
+
+        /* 連接線流動動畫效果 */
+        @keyframes lineFlow {
+            0% {
+                stroke-dashoffset: 100;
+            }
+            100% {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        /* 連接線發光效果 */
+        @keyframes lineGlow {
+            0% {
+                filter: drop-shadow(0 0 2px red) drop-shadow(0 0 4px red);
+            }
+            50% {
+                filter: drop-shadow(0 0 6px red) drop-shadow(0 0 10px red);
+            }
+            100% {
+                filter: drop-shadow(0 0 2px red) drop-shadow(0 0 4px red);
+            }
+        }
+
+        .highlighted-line {
+            stroke-dasharray: 10 5;
+            animation: lineFlow 1s linear infinite, lineGlow 2s ease-in-out infinite;
+        }
     </style>
 </head>
 <body>
@@ -1723,6 +1751,41 @@
             document.getElementById('topControls').classList.remove('hide');
             document.getElementById('controls').classList.remove('hide');
 
+            // 清除所有紅色覆蓋框架
+            const overlays = document.querySelectorAll('.vendor-overlay');
+            overlays.forEach(overlay => overlay.remove());
+
+            // 恢復所有連接線的原始狀態
+            const highlightedLines = mainSvg.querySelectorAll('.highlighted-line');
+            highlightedLines.forEach(line => {
+                // 恢復原始屬性
+                const originalStroke = line.getAttribute('data-original-stroke');
+                const originalStrokeWidth = line.getAttribute('data-original-stroke-width');
+                const originalStrokeDasharray = line.getAttribute('data-original-stroke-dasharray');
+
+                if (originalStroke) {
+                    line.setAttribute('stroke', originalStroke);
+                }
+                if (originalStrokeWidth) {
+                    line.setAttribute('stroke-width', originalStrokeWidth);
+                }
+                if (originalStrokeDasharray === 'none') {
+                    line.removeAttribute('stroke-dasharray');
+                } else if (originalStrokeDasharray) {
+                    line.setAttribute('stroke-dasharray', originalStrokeDasharray);
+                }
+
+                // 清除動畫相關屬性
+                line.removeAttribute('stroke-dashoffset');
+                line.style.animation = '';
+                line.classList.remove('highlighted-line');
+
+                // 清除保存的原始屬性
+                line.removeAttribute('data-original-stroke');
+                line.removeAttribute('data-original-stroke-width');
+                line.removeAttribute('data-original-stroke-dasharray');
+            });
+
             // 關閉 Info Window（只關閉視窗，不再調用 closeInfoWindow 避免循環）
             const infoWindow = document.getElementById('infoWindow');
             const overlay = document.getElementById('infoWindowOverlay');
@@ -1732,6 +1795,41 @@
             }
         }
 
+        // 廠商到連接線的映射關係 (根據vendor_line_mapping.csv)
+        const vendorToConnectionLines = {
+            'AZ': ['svg_803'],
+            'FMC': ['svg_797', 'svg_802'],
+            '中化': ['svg_787'],
+            '益富': ['svg_788'],
+            '亞培': ['svg_789'],
+            '偉喬': ['svg_791', 'svg_792'],
+            '台田': ['svg_793', 'svg_794'],
+            'Everest': ['svg_796'],
+            '泰和碩': ['svg_791'],  // 與偉喬共用svg_791
+            '萬益特': ['svg_858', 'svg_859'],
+            '諾華': ['svg_857'],
+            'Vera Therapeutics': ['svg_834'],
+            '百靈佳': ['svg_856'],
+            '幸昌生技': ['svg_849', 'svg_837', 'svg_855'],
+            '幸昌醫藥': ['svg_839'],
+            '大昌華嘉': ['svg_844'],
+            '寶齡富錦': ['svg_835'],
+            '吉泰': ['svg_836'],
+            '一成': ['svg_848'],
+            '新穎': ['svg_838'],
+            '新漢': ['svg_841'],
+            '米飛': ['svg_845'],
+            '拜耳': ['svg_846'],
+            '華江': ['svg_847'],
+            '賽諾菲': ['svg_840'],
+            '英禾美': ['svg_842', 'svg_843'],
+            '大塚': ['svg_795', 'svg_807'],
+            '佳醫': ['svg_810'],
+            '諾和諾德': ['svg_811'],
+            'GSK': ['svg_809'],
+            '費森尤斯卡比': ['svg_808']
+        };
+
         // 應用搜尋縮放效果
         function applySearchScaleEffect(vendorName) {
             const vendor = vendorData[vendorName];
@@ -1740,17 +1838,60 @@
             vendor.svgIds.forEach(svgId => {
                 const element = mainSvg.querySelector(`#${svgId}`);
                 if (element) {
-                    // 獲取元素的實際邊界框
-                    const bbox = element.getBBox();
-                    const centerX = bbox.x + bbox.width / 2;
-                    const centerY = bbox.y + bbox.height / 2;
+                    // 創建個別的紅色覆蓋框架
+                    const overlay = document.createElement('div');
+                    overlay.className = 'vendor-overlay';
+                    overlay.id = `overlay-${svgId}`;
 
-                    // 使用 SVG 座標系的精確中心點
-                    element.style.transformOrigin = `${centerX}px ${centerY}px`;
-                    element.style.transform = 'scale(1.5)';
-                    console.log('Applied search scale to:', svgId, `origin: ${centerX}, ${centerY}`);
+                    // 獲取該攤位的位置和尺寸
+                    const rect = element.getBoundingClientRect();
+
+                    // 設定紅色填滿框架樣式
+                    overlay.style.cssText = `
+                        position: fixed;
+                        left: ${rect.left}px;
+                        top: ${rect.top}px;
+                        width: ${rect.width}px;
+                        height: ${rect.height}px;
+                        background-color: red;
+                        z-index: 200;
+                        pointer-events: none;
+                        transform-origin: center center;
+                        transform: scale(1.5);
+                    `;
+
+                    // 添加到body
+                    document.body.appendChild(overlay);
+
+                    console.log('Created individual red overlay for:', svgId);
                 }
             });
+
+            // 高亮對應的連接線 - 添加流動動畫效果
+            const connectionLines = vendorToConnectionLines[vendorName];
+            if (connectionLines) {
+                connectionLines.forEach(lineId => {
+                    const lineElement = mainSvg.querySelector(`#${lineId}`);
+                    if (lineElement) {
+                        // 保存原始屬性
+                        lineElement.setAttribute('data-original-stroke', lineElement.getAttribute('stroke') || '#29abe2');
+                        lineElement.setAttribute('data-original-stroke-width', lineElement.getAttribute('stroke-width') || '1');
+                        lineElement.setAttribute('data-original-stroke-dasharray', lineElement.getAttribute('stroke-dasharray') || 'none');
+
+                        // 改為紅色並加粗，添加流動動畫
+                        lineElement.setAttribute('stroke', 'red');
+                        lineElement.setAttribute('stroke-width', '3');
+                        lineElement.setAttribute('stroke-dasharray', '10 5');
+                        lineElement.setAttribute('stroke-dashoffset', '100');
+                        lineElement.classList.add('highlighted-line');
+
+                        // 設置動畫樣式
+                        lineElement.style.animation = 'lineFlow 1s linear infinite, lineGlow 2s ease-in-out infinite';
+
+                        console.log('Applied flow animation to connection line:', lineId);
+                    }
+                });
+            }
         }
 
         // 計算搜尋相關度分數
