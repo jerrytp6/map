@@ -1385,6 +1385,14 @@
             animation-play-state: paused !important;
             -webkit-animation-play-state: paused !important;
         }
+
+        /* 簡單SVG圖釘樣式 - 最高層級 */
+        .simple-pin {
+            opacity: 1;
+            z-index: 9999 !important;
+            pointer-events: none;
+        }
+
     </style>
 </head>
 <body>
@@ -1406,6 +1414,25 @@
                 <filter id="vendor-blur" x="-50%" y="-50%" width="200%" height="200%">
                     <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
                     <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.3 0"/>
+                </filter>
+
+
+                <!-- 開源SVG圖釘模板 -->
+                <g id="open-source-pin-template">
+                    <!-- 圖釘主體 - 簡潔的水滴形狀 -->
+                    <path d="M0,-16 C-6,-16 -11,-11 -11,-5 C-11,1 0,16 0,16 C0,16 11,1 11,-5 C11,-11 6,-16 0,-16 Z"
+                          fill="#2563eb" stroke="white" stroke-width="1.5"/>
+                    <!-- 內部圓點 -->
+                    <circle cx="0" cy="-5" r="3.5" fill="white"/>
+                </g>
+
+                <!-- 脈動動畫效果 -->
+                <filter id="pin-glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
                 </filter>
             </defs>
         </svg>
@@ -1999,9 +2026,12 @@
             document.getElementById('topControls').classList.remove('hide');
             document.getElementById('controls').classList.remove('hide');
 
-            // 清除所有紅色覆蓋框架
-            const overlays = document.querySelectorAll('.vendor-overlay');
-            overlays.forEach(overlay => overlay.remove());
+
+            // 清除所有測試圓圈和SVG圖釘
+            const testElements = mainSvg.querySelectorAll('[id^="start-test-"], [id^="end-test-"], [id^="start-pin-"]');
+            testElements.forEach(element => element.remove());
+
+
 
             // 恢復所有連接線的原始狀態（除非要保留動畫）
             if (!keepAnimations) {
@@ -2079,6 +2109,61 @@
             // 如果是iOS或者移動端Safari，或者CSS動畫有問題，使用JavaScript動畫
             return isIOS || (isMobile && isSafari);
         }
+
+        // 獲取連接線的起點坐標
+        function getLineStartPoint(lineElement) {
+            if (!lineElement) {
+                console.log('No line element provided');
+                return null;
+            }
+
+            console.log('=== COORDS DEBUG: Analyzing line element:', lineElement.id, lineElement.tagName);
+
+            // 檢查元素的transform屬性
+            const transform = lineElement.getAttribute('transform');
+            console.log('=== COORDS DEBUG: Line element transform:', transform);
+
+            // 檢查父容器的transform
+            let parent = lineElement.parentNode;
+            let parentLevel = 0;
+            while (parent && parent.tagName && parentLevel < 3) {
+                const parentTransform = parent.getAttribute('transform');
+                console.log(`=== COORDS DEBUG: Parent ${parentLevel} (${parent.tagName}${parent.id ? '#' + parent.id : ''}) transform:`, parentTransform);
+                parent = parent.parentNode;
+                parentLevel++;
+            }
+
+            const pathData = lineElement.getAttribute('d');
+            if (pathData) {
+                console.log('=== COORDS DEBUG: Path data:', pathData);
+                // 解析path的起點 (M命令)
+                const match = pathData.match(/M\s*([0-9.-]+)\s*,?\s*([0-9.-]+)/);
+                if (match) {
+                    const point = { x: parseFloat(match[1]), y: parseFloat(match[2]) };
+                    console.log('=== COORDS DEBUG: Raw path start point:', point);
+
+                    // 檢查是否需要應用transform
+                    if (transform) {
+                        console.log('=== COORDS DEBUG: Line has transform, coordinates might need adjustment');
+                    }
+
+                    return point;
+                }
+            }
+
+            // 如果是line元素
+            const x1 = lineElement.getAttribute('x1');
+            const y1 = lineElement.getAttribute('y1');
+            if (x1 && y1) {
+                const point = { x: parseFloat(x1), y: parseFloat(y1) };
+                console.log('=== COORDS DEBUG: Raw line start point:', point);
+                return point;
+            }
+
+            console.log('=== COORDS DEBUG: Could not find start point for element:', lineElement);
+            return null;
+        }
+
 
         // 手機端連接線手動動畫函數
         function startMobileLineAnimation(lineElement) {
@@ -2191,37 +2276,6 @@
             const vendor = vendorData[vendorName];
             if (!vendor) return;
 
-            vendor.svgIds.forEach(svgId => {
-                const element = mainSvg.querySelector(`#${svgId}`);
-                if (element) {
-                    // 創建個別的紅色覆蓋框架
-                    const overlay = document.createElement('div');
-                    overlay.className = 'vendor-overlay';
-                    overlay.id = `overlay-${svgId}`;
-
-                    // 獲取該攤位的位置和尺寸
-                    const rect = element.getBoundingClientRect();
-
-                    // 設定紅色填滿框架樣式
-                    overlay.style.cssText = `
-                        position: fixed;
-                        left: ${rect.left}px;
-                        top: ${rect.top}px;
-                        width: ${rect.width}px;
-                        height: ${rect.height}px;
-                        background-color: red;
-                        z-index: 200;
-                        pointer-events: none;
-                        transform-origin: center center;
-                        transform: scale(1.5);
-                    `;
-
-                    // 添加到body
-                    document.body.appendChild(overlay);
-
-                    console.log('Created individual red overlay for:', svgId);
-                }
-            });
 
             // 高亮對應的連接線 - 添加流動動畫效果
             const connectionLines = vendorToConnectionLines[vendorName];
@@ -2285,6 +2339,90 @@
                             lineElement.style.animationPlayState = 'running';
                             lineElement.style.webkitAnimationPlayState = 'running';
                             console.log('Using CSS animation for:', lineId);
+                        }
+
+                        // 在連接線起點創建藍色測試圓圈
+                        const startPoint = getLineStartPoint(lineElement);
+                        if (startPoint) {
+                            console.log('🔵 === COORDINATES COMPARISON ===');
+                            console.log('🔵 Line ID:', lineId);
+                            console.log('🔵 Connection line start point:', startPoint);
+
+                            // 找到連接線所在的正確SVG容器
+                            const svgParent = lineElement.parentNode;
+                            console.log('🔵 SVG parent container:', svgParent?.tagName, svgParent?.id);
+
+                            if (svgParent) {
+                                // 創建藍色測試圓圈在起點
+                                const testStartPin = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                                testStartPin.setAttribute('cx', startPoint.x);
+                                testStartPin.setAttribute('cy', startPoint.y);
+                                testStartPin.setAttribute('r', '8');
+                                testStartPin.setAttribute('fill', 'blue');
+                                testStartPin.setAttribute('stroke', 'white');
+                                testStartPin.setAttribute('stroke-width', '2');
+                                testStartPin.setAttribute('id', `start-test-${lineId}`);
+
+                                // 創建簡單SVG圖釘在起點
+                                const pinGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                                pinGroup.setAttribute('class', 'simple-pin');
+                                pinGroup.setAttribute('id', `start-pin-${lineId}`);
+                                // 讓水滴尖點（底部）對準起點，需要向上偏移20個單位
+                                pinGroup.setAttribute('transform', `translate(${startPoint.x}, ${startPoint.y - 20})`);
+
+                                // 簡單的圖釘形狀 - 更大更明顯
+                                const pinPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                                pinPath.setAttribute('d', 'M0,-20 C-8,-20 -15,-12 -15,-6 C-15,2 0,20 0,20 C0,20 15,2 15,-6 C15,-12 8,-20 0,-20 Z');
+                                pinPath.setAttribute('fill', 'red');
+                                pinPath.setAttribute('stroke', 'white');
+                                pinPath.setAttribute('stroke-width', '3');
+                                pinPath.setAttribute('opacity', '1');
+
+                                // 內部圓點 - 更大更明顯
+                                const innerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                                innerCircle.setAttribute('cx', '0');
+                                innerCircle.setAttribute('cy', '-6');
+                                innerCircle.setAttribute('r', '5');
+                                innerCircle.setAttribute('fill', 'white');
+                                innerCircle.setAttribute('opacity', '1');
+
+                                pinGroup.appendChild(pinPath);
+                                pinGroup.appendChild(innerCircle);
+
+                                // 添加藍色圓圈到與連接線相同的容器
+                                svgParent.appendChild(testStartPin);
+
+                                // 方法1：試著添加到最頂層SVG
+                                if (mainSvg) {
+                                    mainSvg.appendChild(pinGroup);
+                                    console.log('🔴 Pin added to TOP LEVEL mainSvg');
+                                console.log('📍 Pin positioned: center at', { x: startPoint.x, y: startPoint.y - 20 });
+                                console.log('📍 Pin tip should be at start point:', { x: startPoint.x, y: startPoint.y });
+                                }
+
+                                console.log('🔵 Added blue test circle to SAME container as connection line at START point');
+                                console.log('🔴 Added simple SVG pin to SAME container as connection line at START point');
+
+                                // 調試：檢查創建的元素
+                                console.log('🔵 Blue circle element:', testStartPin);
+                                console.log('🔴 Red pin element:', pinGroup);
+                                console.log('🔴 Pin path element:', pinPath);
+                                console.log('🔴 Pin inner circle:', innerCircle);
+
+                                // 檢查元素是否真的在DOM中
+                                setTimeout(() => {
+                                    const blueInDOM = document.getElementById(`start-test-${lineId}`);
+                                    const redInDOM = document.getElementById(`start-pin-${lineId}`);
+                                    console.log('🔵 Blue circle in DOM:', blueInDOM ? 'YES' : 'NO');
+                                    console.log('🔴 Red pin in DOM:', redInDOM ? 'YES' : 'NO');
+                                }, 100);
+
+                                console.log('✅ Both blue circle and red pin added at connection line START point');
+                            } else {
+                                console.error('=== PIN DEBUG: Could not find SVG parent for line:', lineId);
+                            }
+                        } else {
+                            console.error('=== PIN DEBUG: Could not get start point for line:', lineId);
                         }
 
                         console.log('Applied flow animation to connection line:', lineId);
@@ -3037,7 +3175,7 @@
                 lastTime = currentTime;
                 velocityX = 0;
                 velocityY = 0;
-                svgContainer.classList.add('grabbing');
+                if (svgContainer) svgContainer.classList.add('grabbing');
             } else if (touches.length === 2) {
                 isDragging = false;
                 isScaling = true;
@@ -3137,7 +3275,7 @@
 
                 isDragging = false;
                 isScaling = false;
-                svgContainer.classList.remove('grabbing');
+                if (svgContainer) svgContainer.classList.remove('grabbing');
                 lastDistance = 0;
                 initialDistance = 0;
             } else if (touches.length === 1 && isScaling) {
@@ -3147,7 +3285,7 @@
                 lastX = touches[0].clientX;
                 lastY = touches[0].clientY;
                 lastTime = Date.now();
-                svgContainer.classList.add('grabbing');
+                if (svgContainer) svgContainer.classList.add('grabbing');
             }
         }
 
@@ -3157,7 +3295,7 @@
             isDragging = true;
             lastX = e.clientX;
             lastY = e.clientY;
-            svgContainer.classList.add('grabbing');
+            if (svgContainer) svgContainer.classList.add('grabbing');
         }
 
         function handleMouseMove(e) {
@@ -3180,7 +3318,9 @@
 
         function handleMouseUp() {
             isDragging = false;
-            svgContainer.classList.remove('grabbing');
+            if (svgContainer) {
+                if (svgContainer) svgContainer.classList.remove('grabbing');
+            }
         }
 
         function handleWheel(e) {
