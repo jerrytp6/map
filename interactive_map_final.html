@@ -1286,13 +1286,22 @@
             display: block;
         }
 
-        /* 連接線流動動畫效果 - 手機兼容版本 */
+        /* 連接線流動動畫效果 - 改用負值解決Safari問題 */
         @keyframes lineFlow {
             from {
-                stroke-dashoffset: 30;
+                stroke-dashoffset: 0;
             }
             to {
+                stroke-dashoffset: -30; /* 使用負值避免Safari循環問題 */
+            }
+        }
+
+        @-webkit-keyframes lineFlow {
+            from {
                 stroke-dashoffset: 0;
+            }
+            to {
+                stroke-dashoffset: -30;
             }
         }
 
@@ -1329,11 +1338,13 @@
         }
 
         .highlighted-line {
-            stroke-dasharray: 15 15; /* 使用兩個相同值解決Safari兼容性問題 */
-            animation: lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite;
-            -webkit-animation: lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite;
+            stroke-dasharray: 12 10; /* 使用兩個值解決Safari兼容性 */
+            stroke-dashoffset: 0; /* 初始值設為0 */
+            animation: lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite;
+            -webkit-animation: lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite;
             animation-fill-mode: both;
             -webkit-animation-fill-mode: both;
+            will-change: stroke-dashoffset; /* 硬體加速提示 */
         }
 
         /* 桌面端使用更複雜的發光效果 */
@@ -1344,23 +1355,35 @@
             }
         }
 
-        /* 手機端優化 - 強制動畫設定 */
+        /* 手機端優化 */
         @media (max-width: 768px) {
             .highlighted-line {
-                animation: lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite !important;
-                -webkit-animation: lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite !important;
-                will-change: stroke-dashoffset, opacity, stroke-width;
+                animation: lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite !important;
+                -webkit-animation: lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite !important;
+                will-change: stroke-dashoffset;
                 animation-play-state: running !important;
                 -webkit-animation-play-state: running !important;
                 transform: translateZ(0); /* 強制硬體加速 */
+                -webkit-transform: translateZ(0);
             }
+        }
 
-            /* 強制動畫持續運行 */
-            .highlighted-line:not(:hover) {
-                animation-duration: 2s !important;
-                animation-iteration-count: infinite !important;
-                animation-timing-function: linear !important;
+        /* 尊重使用者的降低動作偏好設定 */
+        @media (prefers-reduced-motion: reduce) {
+            .highlighted-line {
+                animation: none !important;
+                -webkit-animation: none !important;
+                /* 保留靜態的紅色高亮 */
+                stroke: red !important;
+                stroke-width: 4 !important;
+                opacity: 1 !important;
             }
+        }
+
+        /* 動畫暫停狀態控制 */
+        .highlighted-line.paused {
+            animation-play-state: paused !important;
+            -webkit-animation-play-state: paused !important;
         }
     </style>
 </head>
@@ -2010,8 +2033,15 @@
                 line.style.webkitAnimationFillMode = '';
                 line.style.transform = '';
                 line.style.opacity = '';
+                line.style.willChange = '';
 
-                // 停止手機端手動動畫
+                // 清理IntersectionObserver
+                if (line._animationObserver) {
+                    line._animationObserver.disconnect();
+                    delete line._animationObserver;
+                }
+
+                // 停止手機端手動動畫（如果還在使用）
                 if (line.getAttribute('data-mobile-animation') === 'true') {
                     stopMobileLineAnimation(line);
                     line.removeAttribute('data-mobile-animation');
@@ -2188,30 +2218,48 @@
                         lineElement.setAttribute('data-original-stroke-width', lineElement.getAttribute('stroke-width') || '1');
                         lineElement.setAttribute('data-original-stroke-dasharray', lineElement.getAttribute('stroke-dasharray') || 'none');
 
-                        // 改為紅色並加粗，添加流動動畫 - 使用兩個值解決Safari問題
+                        // 改為紅色並加粗，添加流動動畫
                         lineElement.setAttribute('stroke', 'red');
                         lineElement.setAttribute('stroke-width', '3');
-                        lineElement.setAttribute('stroke-dasharray', '15 15'); // 使用兩個值解決Safari兼容性
-                        lineElement.setAttribute('stroke-dashoffset', '30');
+                        lineElement.setAttribute('stroke-dasharray', '12 10'); // 參考方案的值
+                        lineElement.setAttribute('stroke-dashoffset', '0'); // 初始值0，動畫到-30
                         lineElement.classList.add('highlighted-line');
 
-                        // 檢測是否為手機端並設置對應動畫
-                        const isMobile = window.innerWidth <= 768;
+                        // 設置硬體加速提示
+                        lineElement.style.willChange = 'stroke-dashoffset';
 
-                        if (isMobile) {
-                            // 手機端：使用JavaScript手動動畫替代CSS動畫
-                            lineElement.setAttribute('data-mobile-animation', 'true');
+                        // 使用IntersectionObserver控制動畫播放
+                        if ('IntersectionObserver' in window) {
+                            const observer = new IntersectionObserver((entries) => {
+                                entries.forEach(entry => {
+                                    if (entry.isIntersecting) {
+                                        // 元素可見，播放動畫
+                                        entry.target.style.animationPlayState = 'running';
+                                        entry.target.style.webkitAnimationPlayState = 'running';
+                                    } else {
+                                        // 元素不可見，暫停動畫以節省資源
+                                        entry.target.style.animationPlayState = 'paused';
+                                        entry.target.style.webkitAnimationPlayState = 'paused';
+                                    }
+                                });
+                            }, {
+                                threshold: 0.01,
+                                rootMargin: '50px' // 提前載入動畫
+                            });
 
-                            // 啟動手動動畫
-                            startMobileLineAnimation(lineElement);
+                            observer.observe(lineElement);
 
-                        } else {
-                            // 桌面端：使用CSS動畫
-                            lineElement.style.animation = 'lineFlow 2s linear infinite, lineGlowDesktop 2s ease-in-out infinite';
-                            lineElement.style.webkitAnimation = 'lineFlow 2s linear infinite, lineGlowDesktop 2s ease-in-out infinite';
-                            lineElement.style.animationFillMode = 'both';
-                            lineElement.style.animationPlayState = 'running';
+                            // 儲存observer以便清理
+                            lineElement._animationObserver = observer;
                         }
+
+                        // 立即啟動CSS動畫（不分手機桌面）
+                        lineElement.style.animation = 'lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite';
+                        lineElement.style.webkitAnimation = 'lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite';
+                        lineElement.style.animationFillMode = 'both';
+                        lineElement.style.webkitAnimationFillMode = 'both';
+                        lineElement.style.animationPlayState = 'running';
+                        lineElement.style.webkitAnimationPlayState = 'running';
 
                         console.log('Applied flow animation to connection line:', lineId);
                     }
