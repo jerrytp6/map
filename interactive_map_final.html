@@ -2271,6 +2271,85 @@
             '費森尤斯卡比': ['svg_808']
         };
 
+        // SVG元素到連接線的反向映射 (根據vendor_line_mapping.csv)
+        const svgIdToLineId = {
+            // AZ
+            'svg_658': 'svg_803', 'svg_659': 'svg_803',
+            // FMC
+            'svg_661': 'svg_797', 'svg_662': 'svg_797', 'svg_663': 'svg_797',
+            'svg_799': 'svg_802', 'svg_800': 'svg_802', 'svg_801': 'svg_802',
+            // 中化
+            'svg_665': 'svg_787', 'svg_666': 'svg_787',
+            // 益富
+            'svg_668': 'svg_788', 'svg_669': 'svg_788',
+            // 亞培
+            'svg_671': 'svg_789', 'svg_672': 'svg_789',
+            // 偉喬
+            'svg_674': 'svg_791', 'svg_675': 'svg_791',
+            'svg_677': 'svg_792', 'svg_678': 'svg_792',
+            // 台田
+            'svg_680': 'svg_793', 'svg_681': 'svg_793',
+            'svg_683': 'svg_794', 'svg_684': 'svg_794',
+            // Everest
+            'svg_686': 'svg_796', 'svg_687': 'svg_796', 'svg_688': 'svg_796',
+            'svg_689': 'svg_796', 'svg_690': 'svg_796', 'svg_691': 'svg_796', 'svg_692': 'svg_796',
+            // 泰和碩
+            'svg_694': 'svg_790', 'svg_695': 'svg_790', 'svg_696': 'svg_790',
+            // 萬益特
+            'svg_698': 'svg_858', 'svg_699': 'svg_858', 'svg_700': 'svg_858',
+            'svg_702': 'svg_859', 'svg_703': 'svg_859', 'svg_704': 'svg_859',
+            // 諾華
+            'svg_706': 'svg_857', 'svg_707': 'svg_857',
+            // Vera Therapeutics
+            'svg_709': 'svg_834', 'svg_710': 'svg_834', 'svg_711': 'svg_834', 'svg_712': 'svg_834',
+            'svg_713': 'svg_834', 'svg_714': 'svg_834', 'svg_715': 'svg_834', 'svg_716': 'svg_834',
+            'svg_717': 'svg_834', 'svg_718': 'svg_834', 'svg_719': 'svg_834', 'svg_720': 'svg_834',
+            'svg_721': 'svg_834', 'svg_722': 'svg_834', 'svg_723': 'svg_834', 'svg_724': 'svg_834',
+            // 百靈佳
+            'svg_726': 'svg_856', 'svg_727': 'svg_856', 'svg_728': 'svg_856',
+            // 幸昌生技
+            'svg_730': 'svg_849', 'svg_731': 'svg_849', 'svg_732': 'svg_849', 'svg_733': 'svg_849',
+            'svg_735': 'svg_837', 'svg_736': 'svg_837', 'svg_737': 'svg_837', 'svg_738': 'svg_837',
+            'svg_851': 'svg_855', 'svg_852': 'svg_855', 'svg_853': 'svg_855', 'svg_854': 'svg_855',
+            // 幸昌醫藥
+            'svg_740': 'svg_839', 'svg_741': 'svg_839', 'svg_742': 'svg_839', 'svg_743': 'svg_839',
+            // 大昌華嘉
+            'svg_745': 'svg_844', 'svg_746': 'svg_844', 'svg_747': 'svg_844', 'svg_748': 'svg_844',
+            // 寶齡富錦
+            'svg_750': 'svg_835', 'svg_751': 'svg_835', 'svg_752': 'svg_835', 'svg_753': 'svg_835',
+            // 吉泰
+            'svg_755': 'svg_836', 'svg_756': 'svg_836',
+            // 一成
+            'svg_758': 'svg_848', 'svg_759': 'svg_848',
+            // 新穎
+            'svg_761': 'svg_838', 'svg_762': 'svg_838',
+            // 新漢
+            'svg_764': 'svg_841', 'svg_765': 'svg_841',
+            // 米飛
+            'svg_767': 'svg_845', 'svg_768': 'svg_845',
+            // 拜耳
+            'svg_770': 'svg_846', 'svg_771': 'svg_846',
+            // 華江
+            'svg_773': 'svg_847', 'svg_774': 'svg_847',
+            // 賽諾菲
+            'svg_776': 'svg_840', 'svg_777': 'svg_840', 'svg_778': 'svg_840',
+            // 英禾美
+            'svg_780': 'svg_842', 'svg_781': 'svg_842', 'svg_782': 'svg_842',
+            'svg_784': 'svg_843', 'svg_785': 'svg_843', 'svg_786': 'svg_843',
+            // 大塚
+            'svg_805': 'svg_795', 'svg_806': 'svg_795',
+            'svg_813': 'svg_807', 'svg_814': 'svg_807',
+            // 佳醫
+            'svg_816': 'svg_810', 'svg_817': 'svg_810',
+            // 諾和諾德
+            'svg_819': 'svg_811', 'svg_820': 'svg_811', 'svg_821': 'svg_811', 'svg_822': 'svg_811',
+            // GSK
+            'svg_824': 'svg_809', 'svg_825': 'svg_809', 'svg_826': 'svg_809',
+            // 費森尤斯卡比
+            'svg_828': 'svg_808', 'svg_829': 'svg_808', 'svg_830': 'svg_808',
+            'svg_831': 'svg_808', 'svg_832': 'svg_808', 'svg_833': 'svg_808'
+        };
+
         // 應用搜尋縮放效果
         function applySearchScaleEffect(vendorName) {
             const vendor = vendorData[vendorName];
@@ -2431,24 +2510,15 @@
             }
 
             // 為沒有連接線的SVG元素在中心點創建圖釘
-            // 首先收集已經處理過的SVG元素（有連接線的）
-            const processedSvgIds = new Set();
-            if (connectionLines) {
-                connectionLines.forEach(lineId => {
-                    // 從 vendor_line_mapping 找到對應這個 lineId 的 svgIds
-                    // 但目前我們沒有反向映射，所以先用簡單的方法：
-                    // 如果有連接線，就認為所有 svgIds 都已處理
-                    // 這個邏輯需要重新設計
-                });
-            }
+            vendor.svgIds.forEach(svgId => {
+                // 使用反向映射檢查這個 svgId 是否有對應的連接線
+                const hasConnectionLine = svgIdToLineId[svgId];
 
-            // 暫時簡化：如果廠商有連接線，就不為任何 svgId 創建中心圖釘
-            // 如果廠商沒有連接線，就為所有 svgId 創建中心圖釘
-            if (!connectionLines || connectionLines.length === 0) {
-                vendor.svgIds.forEach(svgId => {
+                if (!hasConnectionLine) {
+                    // 這個 svgId 沒有連接線，在中心創建藍色圖釘
                     const svgElement = mainSvg.querySelector(`#${svgId}`);
                     if (svgElement) {
-                        console.log('🟡 Creating center pin for SVG element (vendor has no connection lines):', svgId);
+                        console.log('🟡 Creating center pin for SVG element without connection line:', svgId);
 
                         // 獲取元素的中心點
                         const bbox = svgElement.getBBox();
@@ -2491,8 +2561,10 @@
                             }
                         }
                     }
-                });
-            }
+                } else {
+                    console.log('🔴 SVG element has connection line, skipping center pin:', svgId, '→', hasConnectionLine);
+                }
+            });
         }
 
         // 計算搜尋相關度分數
