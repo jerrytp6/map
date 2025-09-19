@@ -2028,7 +2028,7 @@
 
 
             // 清除所有測試圓圈和SVG圖釘
-            const testElements = mainSvg.querySelectorAll('[id^="start-test-"], [id^="end-test-"], [id^="start-pin-"]');
+            const testElements = mainSvg.querySelectorAll('[id^="start-test-"], [id^="end-test-"], [id^="start-pin-"], [id^="center-pin-"]');
             testElements.forEach(element => element.remove());
 
 
@@ -2429,6 +2429,59 @@
                     }
                 });
             }
+
+            // 為沒有連接線的SVG元素在中心點創建圖釘
+            const processedLineIds = connectionLines ? new Set(connectionLines) : new Set();
+            vendor.svgIds.forEach(svgId => {
+                // 如果這個SVG元素沒有對應的連接線，就在它的中心創建圖釘
+                if (!processedLineIds.has(svgId)) {
+                    const svgElement = mainSvg.querySelector(`#${svgId}`);
+                    if (svgElement) {
+                        console.log('🟡 Creating center pin for SVG element without connection line:', svgId);
+
+                        // 獲取元素的中心點
+                        const bbox = svgElement.getBBox();
+                        const centerX = bbox.x + bbox.width / 2;
+                        const centerY = bbox.y + bbox.height / 2;
+
+                        console.log('🟡 Element center point:', { x: centerX, y: centerY });
+
+                        // 創建圖釘在元素中心
+                        const svgParent = svgElement.parentNode;
+                        if (svgParent) {
+                            // 創建簡單SVG圖釘
+                            const pinGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                            pinGroup.setAttribute('class', 'simple-pin');
+                            pinGroup.setAttribute('id', `center-pin-${svgId}`);
+                            // 讓水滴尖點對準中心點，向上偏移20個單位
+                            pinGroup.setAttribute('transform', `translate(${centerX}, ${centerY - 20})`);
+
+                            // 圖釘主體
+                            const pinPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                            pinPath.setAttribute('d', 'M0,-20 C-8,-20 -15,-12 -15,-6 C-15,2 0,20 0,20 C0,20 15,2 15,-6 C15,-12 8,-20 0,-20 Z');
+                            pinPath.setAttribute('fill', 'blue'); // 使用藍色區分中心點圖釘
+                            pinPath.setAttribute('stroke', 'white');
+                            pinPath.setAttribute('stroke-width', '3');
+
+                            // 內部圓點
+                            const innerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                            innerCircle.setAttribute('cx', '0');
+                            innerCircle.setAttribute('cy', '-6');
+                            innerCircle.setAttribute('r', '5');
+                            innerCircle.setAttribute('fill', 'white');
+
+                            pinGroup.appendChild(pinPath);
+                            pinGroup.appendChild(innerCircle);
+
+                            // 添加到最頂層SVG
+                            if (mainSvg) {
+                                mainSvg.appendChild(pinGroup);
+                                console.log('🟡 Center pin added to TOP LEVEL mainSvg for element:', svgId);
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // 計算搜尋相關度分數
