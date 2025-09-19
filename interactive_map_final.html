@@ -1289,29 +1289,66 @@
         /* 連接線流動動畫效果 */
         @keyframes lineFlow {
             0% {
-                stroke-dashoffset: 100;
+                stroke-dashoffset: 20;
             }
             100% {
                 stroke-dashoffset: 0;
             }
         }
 
-        /* 連接線發光效果 */
+        /* 連接線發光效果 - 手機兼容版本 */
         @keyframes lineGlow {
             0% {
+                opacity: 0.8;
+                stroke-width: 3;
+            }
+            50% {
+                opacity: 1;
+                stroke-width: 4;
+            }
+            100% {
+                opacity: 0.8;
+                stroke-width: 3;
+            }
+        }
+
+        /* 連接線發光效果 - 桌面版 */
+        @keyframes lineGlowDesktop {
+            0% {
                 filter: drop-shadow(0 0 2px red) drop-shadow(0 0 4px red);
+                opacity: 0.8;
             }
             50% {
                 filter: drop-shadow(0 0 6px red) drop-shadow(0 0 10px red);
+                opacity: 1;
             }
             100% {
                 filter: drop-shadow(0 0 2px red) drop-shadow(0 0 4px red);
+                opacity: 0.8;
             }
         }
 
         .highlighted-line {
             stroke-dasharray: 10 5;
-            animation: lineFlow 1s linear infinite, lineGlow 2s ease-in-out infinite;
+            animation: lineFlow 1.5s linear infinite, lineGlow 2s ease-in-out infinite;
+            -webkit-animation: lineFlow 1.5s linear infinite, lineGlow 2s ease-in-out infinite;
+        }
+
+        /* 桌面端使用更複雜的發光效果 */
+        @media (min-width: 769px) {
+            .highlighted-line {
+                animation: lineFlow 1.5s linear infinite, lineGlowDesktop 2s ease-in-out infinite;
+                -webkit-animation: lineFlow 1.5s linear infinite, lineGlowDesktop 2s ease-in-out infinite;
+            }
+        }
+
+        /* 手機端優化 */
+        @media (max-width: 768px) {
+            .highlighted-line {
+                animation: lineFlow 1.5s linear infinite, lineGlow 2s ease-in-out infinite;
+                -webkit-animation: lineFlow 1.5s linear infinite, lineGlow 2s ease-in-out infinite;
+                will-change: stroke-dashoffset, opacity, stroke-width;
+            }
         }
     </style>
 </head>
@@ -1971,7 +2008,7 @@
             }
         }
 
-        // 廠商到連接線的映射關係 (根據vendor_line_mapping.csv)
+        // 廠商到連接線的映射關係 (根據更新後的vendor_line_mapping.csv)
         const vendorToConnectionLines = {
             'AZ': ['svg_803'],
             'FMC': ['svg_797', 'svg_802'],
@@ -2058,11 +2095,18 @@
                         lineElement.setAttribute('stroke', 'red');
                         lineElement.setAttribute('stroke-width', '3');
                         lineElement.setAttribute('stroke-dasharray', '10 5');
-                        lineElement.setAttribute('stroke-dashoffset', '100');
+                        lineElement.setAttribute('stroke-dashoffset', '20');
                         lineElement.classList.add('highlighted-line');
 
-                        // 設置動畫樣式
-                        lineElement.style.animation = 'lineFlow 1s linear infinite, lineGlow 2s ease-in-out infinite';
+                        // 檢測是否為手機端並設置對應動畫
+                        const isMobile = window.innerWidth <= 768;
+                        if (isMobile) {
+                            lineElement.style.animation = 'lineFlow 1.5s linear infinite, lineGlow 2s ease-in-out infinite';
+                            lineElement.style.webkitAnimation = 'lineFlow 1.5s linear infinite, lineGlow 2s ease-in-out infinite';
+                        } else {
+                            lineElement.style.animation = 'lineFlow 1.5s linear infinite, lineGlowDesktop 2s ease-in-out infinite';
+                            lineElement.style.webkitAnimation = 'lineFlow 1.5s linear infinite, lineGlowDesktop 2s ease-in-out infinite';
+                        }
 
                         console.log('Applied flow animation to connection line:', lineId);
                     }
