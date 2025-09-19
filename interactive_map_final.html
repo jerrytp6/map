@@ -2009,6 +2009,14 @@
                 line.style.animationFillMode = '';
                 line.style.webkitAnimationFillMode = '';
                 line.style.transform = '';
+                line.style.opacity = '';
+
+                // 停止手機端手動動畫
+                if (line.getAttribute('data-mobile-animation') === 'true') {
+                    stopMobileLineAnimation(line);
+                    line.removeAttribute('data-mobile-animation');
+                }
+
                 line.classList.remove('highlighted-line');
 
                 // 清除保存的原始屬性
@@ -2025,6 +2033,77 @@
                 overlay.classList.remove('show');
             }
         }
+
+        // 手機端手動動畫管理
+        const mobileAnimations = new Map();
+
+        // 手機端連接線手動動畫函數
+        function startMobileLineAnimation(lineElement) {
+            const startTime = performance.now();
+            const dashLength = 30; // stroke-dasharray 的總長度
+            const animationDuration = 2000; // 2秒一個循環
+            let animationId;
+
+            const animate = (currentTime) => {
+                if (!lineElement.classList.contains('highlighted-line')) {
+                    // 動畫已停止
+                    if (mobileAnimations.has(lineElement)) {
+                        cancelAnimationFrame(mobileAnimations.get(lineElement));
+                        mobileAnimations.delete(lineElement);
+                    }
+                    return;
+                }
+
+                const elapsed = currentTime - startTime;
+                const progress = (elapsed % animationDuration) / animationDuration;
+
+                // 計算流動動畫的 stroke-dashoffset
+                const dashOffset = dashLength * (1 - progress);
+                lineElement.setAttribute('stroke-dashoffset', dashOffset);
+
+                // 計算發光動畫的透明度和線條寬度
+                const glowProgress = (elapsed % (animationDuration * 1)) / (animationDuration * 1); // 2秒週期
+                const opacity = 0.8 + 0.2 * Math.sin(glowProgress * Math.PI * 2);
+                const strokeWidth = 3 + Math.sin(glowProgress * Math.PI * 2) * 0.5;
+
+                lineElement.style.opacity = opacity;
+                lineElement.setAttribute('stroke-width', strokeWidth);
+
+                // 繼續動畫
+                animationId = requestAnimationFrame(animate);
+                mobileAnimations.set(lineElement, animationId);
+            };
+
+            // 開始動畫
+            animationId = requestAnimationFrame(animate);
+            mobileAnimations.set(lineElement, animationId);
+
+            console.log('Started mobile line animation for:', lineElement.id);
+        }
+
+        // 停止手機端手動動畫
+        function stopMobileLineAnimation(lineElement) {
+            if (mobileAnimations.has(lineElement)) {
+                cancelAnimationFrame(mobileAnimations.get(lineElement));
+                mobileAnimations.delete(lineElement);
+                console.log('Stopped mobile line animation for:', lineElement.id);
+            }
+        }
+
+        // 頁面可見性變化時重啟手機端動畫
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && window.innerWidth <= 768) {
+                // 頁面變為可見且在手機端，重啟所有活動的手動動畫
+                const highlightedLines = mainSvg?.querySelectorAll('.highlighted-line[data-mobile-animation="true"]');
+                if (highlightedLines) {
+                    highlightedLines.forEach(line => {
+                        stopMobileLineAnimation(line);
+                        setTimeout(() => startMobileLineAnimation(line), 100);
+                    });
+                    console.log('Restarted mobile animations after visibility change');
+                }
+            }
+        });
 
         // 廠商到連接線的映射關係 (根據更新後的vendor_line_mapping.csv)
         const vendorToConnectionLines = {
@@ -2119,45 +2198,19 @@
                         // 檢測是否為手機端並設置對應動畫
                         const isMobile = window.innerWidth <= 768;
 
-                        // 設置基本動畫屬性
-                        lineElement.style.animationFillMode = 'both';
-                        lineElement.style.webkitAnimationFillMode = 'both';
-                        lineElement.style.animationPlayState = 'running';
-                        lineElement.style.webkitAnimationPlayState = 'running';
-
                         if (isMobile) {
-                            // 手機端：強制設定動畫並確保持續運行
-                            lineElement.style.animation = 'lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite';
-                            lineElement.style.webkitAnimation = 'lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite';
-                            lineElement.style.transform = 'translateZ(0)'; // 強制硬體加速
+                            // 手機端：使用JavaScript手動動畫替代CSS動畫
+                            lineElement.setAttribute('data-mobile-animation', 'true');
 
-                            // 強制重啟動畫確保開始播放
-                            setTimeout(() => {
-                                lineElement.style.animation = 'none';
-                                lineElement.offsetHeight; // 觸發重排
-                                lineElement.style.animation = 'lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite';
-                                lineElement.style.animationPlayState = 'running';
-                                lineElement.style.webkitAnimationPlayState = 'running';
-                            }, 10);
-
-                            // 定期檢查動畫狀態並重啟（防止意外停止）
-                            const checkAnimation = () => {
-                                if (lineElement.classList.contains('highlighted-line')) {
-                                    const computedStyle = window.getComputedStyle(lineElement);
-                                    if (computedStyle.animationPlayState === 'paused' ||
-                                        !lineElement.style.animation ||
-                                        lineElement.style.animation === 'none') {
-                                        lineElement.style.animation = 'lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite';
-                                        lineElement.style.animationPlayState = 'running';
-                                    }
-                                    setTimeout(checkAnimation, 3000); // 每3秒檢查一次
-                                }
-                            };
-                            setTimeout(checkAnimation, 1000);
+                            // 啟動手動動畫
+                            startMobileLineAnimation(lineElement);
 
                         } else {
+                            // 桌面端：使用CSS動畫
                             lineElement.style.animation = 'lineFlow 2s linear infinite, lineGlowDesktop 2s ease-in-out infinite';
                             lineElement.style.webkitAnimation = 'lineFlow 2s linear infinite, lineGlowDesktop 2s ease-in-out infinite';
+                            lineElement.style.animationFillMode = 'both';
+                            lineElement.style.animationPlayState = 'running';
                         }
 
                         console.log('Applied flow animation to connection line:', lineId);
