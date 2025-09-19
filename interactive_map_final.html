@@ -1957,7 +1957,7 @@
         }
 
         // 退出聚焦模式
-        function exitFocusMode() {
+        function exitFocusMode(keepAnimations = false) {
             if (!focusMode) return;
 
             focusMode = false;
@@ -2003,57 +2003,59 @@
             const overlays = document.querySelectorAll('.vendor-overlay');
             overlays.forEach(overlay => overlay.remove());
 
-            // 恢復所有連接線的原始狀態
-            const highlightedLines = mainSvg.querySelectorAll('.highlighted-line');
-            highlightedLines.forEach(line => {
-                // 恢復原始屬性
-                const originalStroke = line.getAttribute('data-original-stroke');
-                const originalStrokeWidth = line.getAttribute('data-original-stroke-width');
-                const originalStrokeDasharray = line.getAttribute('data-original-stroke-dasharray');
+            // 恢復所有連接線的原始狀態（除非要保留動畫）
+            if (!keepAnimations) {
+                const highlightedLines = mainSvg.querySelectorAll('.highlighted-line');
+                highlightedLines.forEach(line => {
+                    // 恢復原始屬性
+                    const originalStroke = line.getAttribute('data-original-stroke');
+                    const originalStrokeWidth = line.getAttribute('data-original-stroke-width');
+                    const originalStrokeDasharray = line.getAttribute('data-original-stroke-dasharray');
 
-                if (originalStroke) {
-                    line.setAttribute('stroke', originalStroke);
-                }
-                if (originalStrokeWidth) {
-                    line.setAttribute('stroke-width', originalStrokeWidth);
-                }
-                if (originalStrokeDasharray === 'none') {
-                    line.removeAttribute('stroke-dasharray');
-                } else if (originalStrokeDasharray) {
-                    line.setAttribute('stroke-dasharray', originalStrokeDasharray);
-                }
+                    if (originalStroke) {
+                        line.setAttribute('stroke', originalStroke);
+                    }
+                    if (originalStrokeWidth) {
+                        line.setAttribute('stroke-width', originalStrokeWidth);
+                    }
+                    if (originalStrokeDasharray === 'none') {
+                        line.removeAttribute('stroke-dasharray');
+                    } else if (originalStrokeDasharray) {
+                        line.setAttribute('stroke-dasharray', originalStrokeDasharray);
+                    }
 
-                // 清除動畫相關屬性
-                line.removeAttribute('stroke-dashoffset');
-                line.style.animation = '';
-                line.style.webkitAnimation = '';
-                line.style.animationPlayState = '';
-                line.style.webkitAnimationPlayState = '';
-                line.style.animationFillMode = '';
-                line.style.webkitAnimationFillMode = '';
-                line.style.transform = '';
-                line.style.opacity = '';
-                line.style.willChange = '';
+                    // 清除動畫相關屬性
+                    line.removeAttribute('stroke-dashoffset');
+                    line.style.animation = '';
+                    line.style.webkitAnimation = '';
+                    line.style.animationPlayState = '';
+                    line.style.webkitAnimationPlayState = '';
+                    line.style.animationFillMode = '';
+                    line.style.webkitAnimationFillMode = '';
+                    line.style.transform = '';
+                    line.style.opacity = '';
+                    line.style.willChange = '';
 
-                // 清理IntersectionObserver
-                if (line._animationObserver) {
-                    line._animationObserver.disconnect();
-                    delete line._animationObserver;
-                }
+                    // 清理IntersectionObserver
+                    if (line._animationObserver) {
+                        line._animationObserver.disconnect();
+                        delete line._animationObserver;
+                    }
 
-                // 停止手機端手動動畫（如果還在使用）
-                if (line.getAttribute('data-mobile-animation') === 'true') {
-                    stopMobileLineAnimation(line);
-                    line.removeAttribute('data-mobile-animation');
-                }
+                    // 停止手機端手動動畫（如果還在使用）
+                    if (line.getAttribute('data-mobile-animation') === 'true') {
+                        stopMobileLineAnimation(line);
+                        line.removeAttribute('data-mobile-animation');
+                    }
 
-                line.classList.remove('highlighted-line');
+                    line.classList.remove('highlighted-line');
 
-                // 清除保存的原始屬性
-                line.removeAttribute('data-original-stroke');
-                line.removeAttribute('data-original-stroke-width');
-                line.removeAttribute('data-original-stroke-dasharray');
-            });
+                    // 清除保存的原始屬性
+                    line.removeAttribute('data-original-stroke');
+                    line.removeAttribute('data-original-stroke-width');
+                    line.removeAttribute('data-original-stroke-dasharray');
+                });
+            }
 
             // 關閉 Info Window（只關閉視窗，不再調用 closeInfoWindow 避免循環）
             const infoWindow = document.getElementById('infoWindow');
@@ -2467,9 +2469,9 @@
             // 設定為搜尋觸發
             isSearchTriggered = true;
 
-            // 如果目前在聚焦模式，先退出以確保乾淨的起始狀態
+            // 如果目前在聚焦模式，先退出但保留動畫效果
             if (focusMode) {
-                exitFocusMode();
+                exitFocusMode(true); // 保留動畫效果
             }
 
             // 重置到初始狀態以確保一致的定位計算
@@ -2521,12 +2523,13 @@
                     const updatedCenterX = updatedRect.left + updatedRect.width / 2;
                     const updatedCenterY = updatedRect.top + updatedRect.height / 2;
 
-                    enterFocusMode(vendorName, updatedCenterX, updatedCenterY);
+                    // 先應用動畫效果（避免被聚光燈清除）
+                    applySearchScaleEffect(vendorName);
 
-                    // 延遲應用縮放效果，確保聚光燈先建立
+                    // 然後進入聚光燈模式
                     setTimeout(() => {
-                        applySearchScaleEffect(vendorName);
-                    }, 100);
+                        enterFocusMode(vendorName, updatedCenterX, updatedCenterY);
+                    }, 50);
 
                     setTimeout(() => {
                         // 智能決定Info Window的顯示位置
