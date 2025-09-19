@@ -682,11 +682,128 @@
             color: #3b82f6;
         }
 
-        /* 產業類別下拉選單 */
-        .category-filter {
+        /* 兩段式篩選容器 */
+        .two-stage-filter {
             display: flex;
-            gap: 12px;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* 產業類別選擇區 */
+        .category-selection {
+            background: rgba(249, 250, 251, 0.98);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .category-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 16px;
+            display: flex;
             align-items: center;
+            gap: 8px;
+        }
+
+        .category-title::before {
+            content: '1';
+            display: inline-flex;
+            width: 24px;
+            height: 24px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* 產業類別標籤網格 */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .category-chip {
+            padding: 10px 16px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+        }
+
+        .category-chip:hover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .category-chip.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .category-chip .count {
+            display: block;
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+
+        /* 攤位選擇區 */
+        .vendor-selection {
+            background: rgba(249, 250, 251, 0.98);
+            border-radius: 16px;
+            padding: 20px;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .vendor-selection.active {
+            opacity: 1;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .vendor-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vendor-title::before {
+            content: '2';
+            display: inline-flex;
+            width: 24px;
+            height: 24px;
+            background: #10b981;
+            color: white;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* 產業類別下拉選單 - 隱藏舊版 */
+        .category-filter {
+            display: none;
         }
 
         .category-select {
@@ -897,6 +1014,48 @@
             .stats-bar {
                 flex-wrap: wrap;
                 gap: 8px;
+            }
+
+            /* 兩段式篩選手機優化 */
+            .category-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 8px;
+            }
+
+            .category-chip {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+
+            .category-chip .count {
+                font-size: 11px;
+            }
+
+            .two-stage-filter {
+                gap: 15px;
+            }
+
+            .category-selection,
+            .vendor-selection {
+                padding: 15px;
+                border-radius: 12px;
+            }
+
+            .category-title,
+            .vendor-title {
+                font-size: 15px;
+                margin-bottom: 12px;
+            }
+
+            .category-title::before,
+            .vendor-title::before {
+                width: 20px;
+                height: 20px;
+                font-size: 11px;
+            }
+
+            .vendor-selection.active {
+                max-height: 350px;
             }
 
             .category-filter {
@@ -1259,16 +1418,33 @@
                         </div>
                     </div>
 
+                </div>
+
+                <div class="modal-body">
+                    <!-- 兩段式篩選容器 -->
+                    <div class="two-stage-filter">
+                        <!-- 第一段：產業類別選擇 -->
+                        <div class="category-selection">
+                            <div class="category-title">選擇產業類別</div>
+                            <div class="category-grid" id="categoryGrid">
+                                <!-- 動態生成的類別標籤 -->
+                            </div>
+                        </div>
+
+                        <!-- 第二段：攤位選擇 -->
+                        <div class="vendor-selection" id="vendorSelection">
+                            <div class="vendor-title">選擇攤位廠商</div>
+                            <div class="vendor-list" id="vendorList">
+                                <!-- 動態生成的廠商列表 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 保留舊的下拉選單，但隱藏 -->
                     <div class="category-filter">
                         <select class="category-select" id="categorySelect">
                             <option value="">所有產業類別</option>
                         </select>
-                    </div>
-                </div>
-
-                <div class="modal-body">
-                    <div class="vendor-list" id="vendorList">
-                        <!-- 動態生成的廠商列表 -->
                     </div>
                 </div>
             </div>
@@ -2912,31 +3088,203 @@
             document.getElementById('totalCount').textContent = totalVendors;
             document.getElementById('modalSubtitle').textContent = `${totalVendors} 家參展廠商`;
 
-            // 獲取所有產業類別並填充下拉選單
-            const categories = new Set();
+            // 建立產業類別統計
+            const categoryStats = {};
             Object.values(vendorData).forEach(vendor => {
                 if (vendor.category) {
-                    categories.add(vendor.category);
+                    if (!categoryStats[vendor.category]) {
+                        categoryStats[vendor.category] = 0;
+                    }
+                    categoryStats[vendor.category]++;
                 }
             });
 
-            const categorySelect = document.getElementById('categorySelect');
-            categorySelect.innerHTML = '<option value="">所有產業類別</option>';
-            Array.from(categories).sort().forEach(category => {
-                const option = document.createElement('option');
-                option.value = category;
-                option.textContent = category;
-                categorySelect.appendChild(option);
+            // 生成產業類別網格
+            const categoryGrid = document.getElementById('categoryGrid');
+            categoryGrid.innerHTML = '';
+
+            // 添加"全部"選項
+            const allChip = createCategoryChip('全部', totalVendors, true);
+            categoryGrid.appendChild(allChip);
+
+            // 添加各產業類別
+            Object.entries(categoryStats).sort((a, b) => a[0].localeCompare(b[0], 'zh-TW')).forEach(([category, count]) => {
+                const chip = createCategoryChip(category, count, false);
+                categoryGrid.appendChild(chip);
             });
 
             // 設置事件監聽器
             setupModalEventListeners();
 
-            // 顯示所有廠商
-            displayVendorList();
+            // 初始化：自動選擇"全部"並顯示所有廠商
+            setTimeout(() => {
+                const allChip = document.querySelector('.category-chip');
+                if (allChip) {
+                    allChip.click();
+                }
+            }, 100);
 
             // 顯示對話框
             modal.classList.add('show');
+        }
+
+        // 創建產業類別標籤
+        function createCategoryChip(category, count, isActive) {
+            const chip = document.createElement('div');
+            chip.className = 'category-chip';
+            if (isActive) chip.classList.add('active');
+
+            chip.innerHTML = `
+                <div>${category}</div>
+                <span class="count">${count}家</span>
+            `;
+
+            chip.onclick = () => selectCategory(category, chip);
+            return chip;
+        }
+
+        // 選擇產業類別
+        function selectCategory(category, chipElement) {
+            // 更新選中狀態
+            document.querySelectorAll('.category-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            chipElement.classList.add('active');
+
+            // 顯示第二段篩選區
+            const vendorSelection = document.getElementById('vendorSelection');
+            vendorSelection.classList.add('active');
+
+            // 更新攤位標題
+            const vendorTitle = vendorSelection.querySelector('.vendor-title');
+            if (category === '全部') {
+                vendorTitle.textContent = '所有攤位廠商';
+            } else {
+                vendorTitle.textContent = `${category}類別 - 攤位廠商`;
+            }
+
+            // 顯示對應的廠商列表
+            displayVendorsByCategory(category === '全部' ? null : category);
+
+            // 更新顯示數量
+            const filteredCount = category === '全部'
+                ? Object.keys(vendorData).length
+                : Object.values(vendorData).filter(v => v.category === category).length;
+            document.getElementById('displayCount').textContent = filteredCount;
+        }
+
+        // 根據類別顯示廠商
+        function displayVendorsByCategory(category) {
+            const vendorList = document.getElementById('vendorList');
+            const searchInput = document.getElementById('modalSearchInput');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+            vendorList.innerHTML = '';
+
+            // 篩選廠商
+            const filteredVendors = Object.entries(vendorData).filter(([name, vendor]) => {
+                // 類別篩選
+                if (category && vendor.category !== category) {
+                    return false;
+                }
+
+                // 搜尋篩選（如果有搜尋詞）
+                if (searchTerm) {
+                    const nameMatch = name.toLowerCase().includes(searchTerm);
+                    const boothMatch = vendor.boothNumbers &&
+                        vendor.boothNumbers.some(booth => booth.toString().toLowerCase().includes(searchTerm));
+                    const contentMatch = vendor.content && vendor.content.toLowerCase().includes(searchTerm);
+
+                    if (!nameMatch && !boothMatch && !contentMatch) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            // 排序
+            filteredVendors.sort((a, b) => {
+                const boothA = a[1].boothNumbers?.[0] || 999;
+                const boothB = b[1].boothNumbers?.[0] || 999;
+                return boothA - boothB;
+            });
+
+            // 更新顯示數量
+            document.getElementById('displayCount').textContent = filteredVendors.length;
+
+            // 如果沒有結果，顯示空狀態
+            if (filteredVendors.length === 0) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+                emptyState.innerHTML = `
+                    <div class="empty-state-icon">🔍</div>
+                    <div class="empty-state-text">找不到符合條件的廠商</div>
+                    <div class="empty-state-subtext">請嘗試其他搜尋條件</div>
+                `;
+                vendorList.appendChild(emptyState);
+                return;
+            }
+
+            // 創建廠商卡片
+            filteredVendors.forEach(([name, vendor]) => {
+                const card = createVendorCard(name, vendor);
+                vendorList.appendChild(card);
+            });
+        }
+
+        // 創建廠商卡片
+        function createVendorCard(name, vendor) {
+            const item = document.createElement('div');
+            item.className = 'vendor-item';
+            item.onclick = () => {
+                closeExhibitionModal();
+                focusOnVendor(name);
+            };
+
+            // 廠商資訊
+            const info = document.createElement('div');
+            info.className = 'vendor-info';
+
+            // 廠商名稱
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'vendor-name';
+            nameDiv.textContent = vendor.name;
+            info.appendChild(nameDiv);
+
+            // 詳細資訊
+            const details = document.createElement('div');
+            details.className = 'vendor-details';
+
+            // 攤位編號
+            if (vendor.boothNumbers && vendor.boothNumbers.length > 0) {
+                const booth = document.createElement('span');
+                booth.className = 'vendor-booth';
+                const boothText = vendor.boothNumbers.length > 1 ?
+                    `攤位 ${vendor.boothNumbers.join(', ')}` :
+                    `攤位 ${vendor.boothNumbers[0]}`;
+                booth.textContent = boothText;
+                details.appendChild(booth);
+            }
+
+            // 產業類別
+            if (vendor.category) {
+                const category = document.createElement('span');
+                category.className = 'vendor-category';
+                category.textContent = vendor.category;
+                details.appendChild(category);
+            }
+
+            info.appendChild(details);
+            item.appendChild(info);
+
+            // 箭頭圖標
+            const arrow = document.createElement('div');
+            arrow.className = 'vendor-arrow';
+            arrow.innerHTML = '→';
+            item.appendChild(arrow);
+
+            return item;
         }
 
         // 設置模態框事件監聽器
@@ -2955,7 +3303,13 @@
 
         // 處理模態框內搜尋
         function handleModalSearch() {
-            displayVendorList();
+            // 獲取當前選中的類別
+            const activeChip = document.querySelector('.category-chip.active');
+            if (activeChip) {
+                const categoryText = activeChip.querySelector('div').textContent;
+                const category = categoryText === '全部' ? null : categoryText;
+                displayVendorsByCategory(category);
+            }
         }
 
         // 處理類別變更
