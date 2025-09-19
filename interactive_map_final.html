@@ -1286,34 +1286,22 @@
             display: block;
         }
 
-        /* 連接線流動動畫效果 - 使用stroke-dasharray交替方法提高穩定性 */
+        /* 連接線流動動畫效果 - 恢復原來的方法但修復持續播放 */
         @keyframes lineFlow {
-            0% {
-                stroke-dasharray: 0 22;
+            from {
                 stroke-dashoffset: 0;
             }
-            50% {
-                stroke-dasharray: 11 11;
-                stroke-dashoffset: 0;
-            }
-            100% {
-                stroke-dasharray: 22 0;
-                stroke-dashoffset: 0;
+            to {
+                stroke-dashoffset: 22; /* 使用正值，與dasharray長度一致 */
             }
         }
 
         @-webkit-keyframes lineFlow {
-            0% {
-                stroke-dasharray: 0 22;
+            from {
                 stroke-dashoffset: 0;
             }
-            50% {
-                stroke-dasharray: 11 11;
-                stroke-dashoffset: 0;
-            }
-            100% {
-                stroke-dasharray: 22 0;
-                stroke-dashoffset: 0;
+            to {
+                stroke-dashoffset: 22; /* 使用正值，與dasharray長度一致 */
             }
         }
 
@@ -1350,13 +1338,13 @@
         }
 
         .highlighted-line {
-            /* stroke-dasharray 將由動畫控制，不在此設定 */
+            stroke-dasharray: 12 10; /* 恢復原來的設定 */
             stroke-dashoffset: 0; /* 初始值設為0 */
             animation: lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite;
             -webkit-animation: lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite;
             animation-fill-mode: both;
             -webkit-animation-fill-mode: both;
-            will-change: stroke-dasharray, stroke-dashoffset; /* 硬體加速提示包含dasharray */
+            will-change: stroke-dashoffset; /* 恢復原來的設定 */
         }
 
         /* 桌面端使用更複雜的發光效果 */
@@ -2111,22 +2099,12 @@
                 const elapsed = currentTime - startTime;
                 const progress = (elapsed % animationDuration) / animationDuration;
 
-                // 使用stroke-dasharray交替動畫，避免負值問題
-                let dashArray1, dashArray2;
-                if (progress < 0.5) {
-                    // 前半段：從 "0 22" 到 "11 11"
-                    const t = progress * 2; // 0 到 1
-                    dashArray1 = Math.round(22 * t);
-                    dashArray2 = 22 - dashArray1;
-                } else {
-                    // 後半段：從 "11 11" 到 "22 0"
-                    const t = (progress - 0.5) * 2; // 0 到 1
-                    dashArray1 = 11 + Math.round(11 * t);
-                    dashArray2 = 11 - Math.round(11 * t);
-                }
+                // 恢復原來的動畫邏輯但使用正值
+                const dashLength = 22; // 總 dash 長度
+                const dashOffset = dashLength * progress; // 使用正值
 
-                lineElement.setAttribute('stroke-dasharray', `${dashArray1} ${dashArray2}`);
-                lineElement.setAttribute('stroke-dashoffset', '0');
+                lineElement.setAttribute('stroke-dasharray', '12 10');
+                lineElement.setAttribute('stroke-dashoffset', dashOffset);
 
                 // 計算發光動畫的透明度和線條寬度
                 const glowDuration = 2000; // 2秒週期，配合CSS
@@ -2259,13 +2237,13 @@
                         // 改為紅色並加粗，添加流動動畫
                         lineElement.setAttribute('stroke', 'red');
                         lineElement.setAttribute('stroke-width', '3');
-                        // stroke-dasharray 將由 CSS 動畫控制，移除此設定
-                        lineElement.removeAttribute('stroke-dasharray');
+                        // 恢復原來的 stroke-dasharray 設定
+                        lineElement.setAttribute('stroke-dasharray', '12 10');
                         lineElement.setAttribute('stroke-dashoffset', '0'); // 初始值
                         lineElement.classList.add('highlighted-line');
 
                         // 設置硬體加速提示
-                        lineElement.style.willChange = 'stroke-dasharray, stroke-dashoffset';
+                        lineElement.style.willChange = 'stroke-dashoffset';
 
                         // 使用IntersectionObserver控制動畫播放
                         if ('IntersectionObserver' in window) {
