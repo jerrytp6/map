@@ -2431,13 +2431,24 @@
             }
 
             // 為沒有連接線的SVG元素在中心點創建圖釘
-            const processedLineIds = connectionLines ? new Set(connectionLines) : new Set();
-            vendor.svgIds.forEach(svgId => {
-                // 如果這個SVG元素沒有對應的連接線，就在它的中心創建圖釘
-                if (!processedLineIds.has(svgId)) {
+            // 首先收集已經處理過的SVG元素（有連接線的）
+            const processedSvgIds = new Set();
+            if (connectionLines) {
+                connectionLines.forEach(lineId => {
+                    // 從 vendor_line_mapping 找到對應這個 lineId 的 svgIds
+                    // 但目前我們沒有反向映射，所以先用簡單的方法：
+                    // 如果有連接線，就認為所有 svgIds 都已處理
+                    // 這個邏輯需要重新設計
+                });
+            }
+
+            // 暫時簡化：如果廠商有連接線，就不為任何 svgId 創建中心圖釘
+            // 如果廠商沒有連接線，就為所有 svgId 創建中心圖釘
+            if (!connectionLines || connectionLines.length === 0) {
+                vendor.svgIds.forEach(svgId => {
                     const svgElement = mainSvg.querySelector(`#${svgId}`);
                     if (svgElement) {
-                        console.log('🟡 Creating center pin for SVG element without connection line:', svgId);
+                        console.log('🟡 Creating center pin for SVG element (vendor has no connection lines):', svgId);
 
                         // 獲取元素的中心點
                         const bbox = svgElement.getBBox();
@@ -2480,8 +2491,8 @@
                             }
                         }
                     }
-                }
-            });
+                });
+            }
         }
 
         // 計算搜尋相關度分數
