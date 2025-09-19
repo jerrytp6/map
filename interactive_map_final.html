@@ -1286,22 +1286,34 @@
             display: block;
         }
 
-        /* 連接線流動動畫效果 - 改用負值解決Safari問題 */
+        /* 連接線流動動畫效果 - 使用stroke-dasharray交替方法提高穩定性 */
         @keyframes lineFlow {
-            from {
+            0% {
+                stroke-dasharray: 0 22;
                 stroke-dashoffset: 0;
             }
-            to {
-                stroke-dashoffset: -30; /* 使用負值避免Safari循環問題 */
+            50% {
+                stroke-dasharray: 11 11;
+                stroke-dashoffset: 0;
+            }
+            100% {
+                stroke-dasharray: 22 0;
+                stroke-dashoffset: 0;
             }
         }
 
         @-webkit-keyframes lineFlow {
-            from {
+            0% {
+                stroke-dasharray: 0 22;
                 stroke-dashoffset: 0;
             }
-            to {
-                stroke-dashoffset: -30;
+            50% {
+                stroke-dasharray: 11 11;
+                stroke-dashoffset: 0;
+            }
+            100% {
+                stroke-dasharray: 22 0;
+                stroke-dashoffset: 0;
             }
         }
 
@@ -1338,13 +1350,13 @@
         }
 
         .highlighted-line {
-            stroke-dasharray: 12 10; /* 使用兩個值解決Safari兼容性 */
+            /* stroke-dasharray 將由動畫控制，不在此設定 */
             stroke-dashoffset: 0; /* 初始值設為0 */
             animation: lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite;
             -webkit-animation: lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite;
             animation-fill-mode: both;
             -webkit-animation-fill-mode: both;
-            will-change: stroke-dashoffset; /* 硬體加速提示 */
+            will-change: stroke-dasharray, stroke-dashoffset; /* 硬體加速提示包含dasharray */
         }
 
         /* 桌面端使用更複雜的發光效果 */
@@ -2069,11 +2081,21 @@
         // 手機端手動動畫管理
         const mobileAnimations = new Map();
 
+        // 檢測是否需要使用JavaScript動畫（針對有問題的瀏覽器）
+        function needsJavaScriptAnimation() {
+            // 檢測iOS Safari或者其他有動畫問題的瀏覽器
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+            const isMobile = window.innerWidth <= 768;
+
+            // 如果是iOS或者移動端Safari，或者CSS動畫有問題，使用JavaScript動畫
+            return isIOS || (isMobile && isSafari);
+        }
+
         // 手機端連接線手動動畫函數
         function startMobileLineAnimation(lineElement) {
             const startTime = performance.now();
-            const dashLength = 30; // stroke-dasharray 的總長度
-            const animationDuration = 2000; // 2秒一個循環
+            const animationDuration = 2500; // 2.5秒一個循環，配合CSS動畫
             let animationId;
 
             const animate = (currentTime) => {
@@ -2089,12 +2111,26 @@
                 const elapsed = currentTime - startTime;
                 const progress = (elapsed % animationDuration) / animationDuration;
 
-                // 計算流動動畫的 stroke-dashoffset
-                const dashOffset = dashLength * (1 - progress);
-                lineElement.setAttribute('stroke-dashoffset', dashOffset);
+                // 使用stroke-dasharray交替動畫，避免負值問題
+                let dashArray1, dashArray2;
+                if (progress < 0.5) {
+                    // 前半段：從 "0 22" 到 "11 11"
+                    const t = progress * 2; // 0 到 1
+                    dashArray1 = Math.round(22 * t);
+                    dashArray2 = 22 - dashArray1;
+                } else {
+                    // 後半段：從 "11 11" 到 "22 0"
+                    const t = (progress - 0.5) * 2; // 0 到 1
+                    dashArray1 = 11 + Math.round(11 * t);
+                    dashArray2 = 11 - Math.round(11 * t);
+                }
+
+                lineElement.setAttribute('stroke-dasharray', `${dashArray1} ${dashArray2}`);
+                lineElement.setAttribute('stroke-dashoffset', '0');
 
                 // 計算發光動畫的透明度和線條寬度
-                const glowProgress = (elapsed % (animationDuration * 1)) / (animationDuration * 1); // 2秒週期
+                const glowDuration = 2000; // 2秒週期，配合CSS
+                const glowProgress = (elapsed % glowDuration) / glowDuration;
                 const opacity = 0.8 + 0.2 * Math.sin(glowProgress * Math.PI * 2);
                 const strokeWidth = 3 + Math.sin(glowProgress * Math.PI * 2) * 0.5;
 
@@ -2223,12 +2259,13 @@
                         // 改為紅色並加粗，添加流動動畫
                         lineElement.setAttribute('stroke', 'red');
                         lineElement.setAttribute('stroke-width', '3');
-                        lineElement.setAttribute('stroke-dasharray', '12 10'); // 參考方案的值
-                        lineElement.setAttribute('stroke-dashoffset', '0'); // 初始值0，動畫到-30
+                        // stroke-dasharray 將由 CSS 動畫控制，移除此設定
+                        lineElement.removeAttribute('stroke-dasharray');
+                        lineElement.setAttribute('stroke-dashoffset', '0'); // 初始值
                         lineElement.classList.add('highlighted-line');
 
                         // 設置硬體加速提示
-                        lineElement.style.willChange = 'stroke-dashoffset';
+                        lineElement.style.willChange = 'stroke-dasharray, stroke-dashoffset';
 
                         // 使用IntersectionObserver控制動畫播放
                         if ('IntersectionObserver' in window) {
@@ -2255,13 +2292,22 @@
                             lineElement._animationObserver = observer;
                         }
 
-                        // 立即啟動CSS動畫（不分手機桌面）
-                        lineElement.style.animation = 'lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite';
-                        lineElement.style.webkitAnimation = 'lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite';
-                        lineElement.style.animationFillMode = 'both';
-                        lineElement.style.webkitAnimationFillMode = 'both';
-                        lineElement.style.animationPlayState = 'running';
-                        lineElement.style.webkitAnimationPlayState = 'running';
+                        // 智能選擇動畫方法
+                        if (needsJavaScriptAnimation()) {
+                            // 使用JavaScript動畫（針對有問題的瀏覽器）
+                            lineElement.setAttribute('data-mobile-animation', 'true');
+                            startMobileLineAnimation(lineElement);
+                            console.log('Using JavaScript animation for:', lineId);
+                        } else {
+                            // 使用CSS動畫（現代瀏覽器）
+                            lineElement.style.animation = 'lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite';
+                            lineElement.style.webkitAnimation = 'lineFlow 2.5s linear infinite, lineGlow 2s ease-in-out infinite';
+                            lineElement.style.animationFillMode = 'both';
+                            lineElement.style.webkitAnimationFillMode = 'both';
+                            lineElement.style.animationPlayState = 'running';
+                            lineElement.style.webkitAnimationPlayState = 'running';
+                            console.log('Using CSS animation for:', lineId);
+                        }
 
                         console.log('Applied flow animation to connection line:', lineId);
                     }
