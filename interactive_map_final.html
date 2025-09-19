@@ -2003,6 +2003,12 @@
                 // 清除動畫相關屬性
                 line.removeAttribute('stroke-dashoffset');
                 line.style.animation = '';
+                line.style.webkitAnimation = '';
+                line.style.animationPlayState = '';
+                line.style.webkitAnimationPlayState = '';
+                line.style.animationFillMode = '';
+                line.style.webkitAnimationFillMode = '';
+                line.style.transform = '';
                 line.classList.remove('highlighted-line');
 
                 // 清除保存的原始屬性
@@ -2112,12 +2118,17 @@
 
                         // 檢測是否為手機端並設置對應動畫
                         const isMobile = window.innerWidth <= 768;
+
+                        // 設置基本動畫屬性
+                        lineElement.style.animationFillMode = 'both';
+                        lineElement.style.webkitAnimationFillMode = 'both';
+                        lineElement.style.animationPlayState = 'running';
+                        lineElement.style.webkitAnimationPlayState = 'running';
+
                         if (isMobile) {
                             // 手機端：強制設定動畫並確保持續運行
                             lineElement.style.animation = 'lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite';
                             lineElement.style.webkitAnimation = 'lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite';
-                            lineElement.style.animationPlayState = 'running';
-                            lineElement.style.webkitAnimationPlayState = 'running';
                             lineElement.style.transform = 'translateZ(0)'; // 強制硬體加速
 
                             // 強制重啟動畫確保開始播放
@@ -2125,7 +2136,25 @@
                                 lineElement.style.animation = 'none';
                                 lineElement.offsetHeight; // 觸發重排
                                 lineElement.style.animation = 'lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite';
+                                lineElement.style.animationPlayState = 'running';
+                                lineElement.style.webkitAnimationPlayState = 'running';
                             }, 10);
+
+                            // 定期檢查動畫狀態並重啟（防止意外停止）
+                            const checkAnimation = () => {
+                                if (lineElement.classList.contains('highlighted-line')) {
+                                    const computedStyle = window.getComputedStyle(lineElement);
+                                    if (computedStyle.animationPlayState === 'paused' ||
+                                        !lineElement.style.animation ||
+                                        lineElement.style.animation === 'none') {
+                                        lineElement.style.animation = 'lineFlow 2s linear infinite, lineGlow 2s ease-in-out infinite';
+                                        lineElement.style.animationPlayState = 'running';
+                                    }
+                                    setTimeout(checkAnimation, 3000); // 每3秒檢查一次
+                                }
+                            };
+                            setTimeout(checkAnimation, 1000);
+
                         } else {
                             lineElement.style.animation = 'lineFlow 2s linear infinite, lineGlowDesktop 2s ease-in-out infinite';
                             lineElement.style.webkitAnimation = 'lineFlow 2s linear infinite, lineGlowDesktop 2s ease-in-out infinite';
