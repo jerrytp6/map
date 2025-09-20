@@ -2578,7 +2578,8 @@
                 maxScore = Math.max(maxScore, 100); // 完全匹配
             } else if (vendorLower.startsWith(searchLower)) {
                 maxScore = Math.max(maxScore, 80); // 開頭匹配
-            } else if (vendorLower.includes(searchLower)) {
+            } else if (vendorLower.length >= searchLower.length && vendorLower.includes(searchLower)) {
+                // 廠商名稱也需要長度限制，避免搜尋 "119" 匹配到廠商名 "1" 或 "11"
                 maxScore = Math.max(maxScore, 60); // 包含匹配
             }
 
@@ -2587,7 +2588,9 @@
                 const boothLower = boothNumber.toString().toLowerCase();
                 if (boothLower === searchLower) {
                     maxScore = Math.max(maxScore, 100); // 攤位號完全匹配
-                } else if (boothLower.includes(searchLower)) {
+                } else if (boothLower.length >= searchLower.length && boothLower.includes(searchLower)) {
+                    // 只有攤位號長度 >= 搜尋詞長度時才進行包含匹配
+                    // 例如：搜尋 "119" 可以匹配 "1119"、"2119"，但不會匹配 "11" 或 "19"
                     maxScore = Math.max(maxScore, 90); // 攤位號包含匹配
                 }
             });
@@ -2604,16 +2607,27 @@
                 // 檢查數字部分匹配（如搜尋 "658" 匹配 "svg_658"）
                 const numberPart = svgId.replace(/[^0-9]/g, '');
                 if (numberPart && searchTerm.match(/^\d+$/) && numberPart.includes(searchTerm)) {
+                    // 調試：打印出匹配的 SVG ID
+                    if (searchTerm === '119') {
+                        console.log(`🔍 SVG ID ${svgId} (number: ${numberPart}) matches search term ${searchTerm}`);
+                    }
                     maxScore = Math.max(maxScore, 85); // 數字部分匹配
                 }
             });
 
             // 4. 部分字符匹配（模糊匹配）
-            if (maxScore === 0) {
+            // 如果搜尋詞是純數字，不使用字符相似度匹配（避免 119 匹配到 1、11、19 等）
+            if (maxScore === 0 && !searchTerm.match(/^\d+$/)) {
                 const similarity = calculateStringSimilarity(searchLower, vendorLower);
                 if (similarity > 0.3) { // 相似度閾值
                     maxScore = Math.max(maxScore, Math.floor(similarity * 50));
                 }
+            }
+
+            // 調試：如果搜尋 119 且有得分，打印詳情
+            if (searchTerm === '119' && maxScore > 0) {
+                console.log(`🎯 Vendor "${vendorName}" scored ${maxScore} for search "119"`);
+                console.log(`   - Booth numbers: ${boothNumbers.join(', ')}`);
             }
 
             return maxScore;
@@ -2728,11 +2742,7 @@
 
                 item.appendChild(infoDiv);
 
-                // 顯示相關度分數
-                const scoreDiv = document.createElement('div');
-                scoreDiv.className = 'vendor-score';
-                scoreDiv.textContent = result.score;
-                item.appendChild(scoreDiv);
+                // 移除分數顯示，前端不需要看到匹配分數
 
                 // 點擊事件
                 item.addEventListener('click', () => {
