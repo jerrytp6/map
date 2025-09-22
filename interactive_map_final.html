@@ -1462,10 +1462,8 @@
             <!-- 會場選擇和展區列表 -->
             <div class="venue-controls">
                 <select class="venue-selector" id="venueSelector" onchange="changeVenue()">
-                    <option value="hall1-1f">南港一館-1樓</option>
-                    <option value="hall1-4f">南港一館-4樓</option>
-                    <option value="hall2-1f">南港二館-1樓</option>
-                    <option value="hall2-4f">南港二館-4樓</option>
+                    <option value="hall2-7f">南港二館-7樓</option>
+                    <option value="hall2-6f">南港二館-6樓</option>
                 </select>
                 <button class="exhibition-btn" onclick="showExhibitionList()">展區列表</button>
             </div>
@@ -2777,9 +2775,9 @@
             // 設定為搜尋觸發
             isSearchTriggered = true;
 
-            // 如果目前在聚焦模式，先退出但保留動畫效果
+            // 如果目前在聚焦模式，先完全退出清理所有效果
             if (focusMode) {
-                exitFocusMode(true); // 保留動畫效果
+                exitFocusMode(false); // 完全清理，包括傳輸線特效
             }
 
             // 重置到初始狀態以確保一致的定位計算
